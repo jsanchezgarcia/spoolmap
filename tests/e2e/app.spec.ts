@@ -89,10 +89,14 @@ test("renders the import workflow without horizontal page overflow", async ({ pa
   ).toBeVisible()
   await expect(page.getByText("Local-first.", { exact: true })).toBeVisible()
   await expect(page.getByRole("list", { name: "How Spoolmap works" })).toBeVisible()
-  await expect(
-    page.getByRole("link", { name: /Export JSON from 3DFilamentProfiles/ }),
-  ).toHaveAttribute("href", "https://3dfilamentprofiles.com/my/spools")
-  await expect(page.getByText(/paste a JSON array with/i)).toBeVisible()
+  await expect(page.getByRole("region", { name: "Spool inventory" })).toContainText(
+    "JSON or CSV with hex colors",
+  )
+  await expect(page.getByRole("link", { name: /3DFilamentProfiles/ })).toHaveAttribute(
+    "href",
+    "https://3dfilamentprofiles.com/my/spools",
+  )
+  await expect(page.getByText(/paste a list with/i)).toBeVisible()
   await expect(page.getByRole("button", { name: "Paste JSON" })).toBeVisible()
   await expect(page.getByRole("button", { name: "Try a sample project" })).toBeVisible()
   await expect(page.getByRole("contentinfo")).toContainText("Files stay in this browser")

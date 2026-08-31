@@ -27,14 +27,14 @@ describe("app view", () => {
   it("explains the JSON inventory format and offers paste when empty", () => {
     const html = view().renderDropzone("inventory")
 
-    expect(html).toContain("Export JSON from 3DFilamentProfiles")
+    expect(html).toContain("JSON or CSV with hex colors")
     expect(html).toContain("https://3dfilamentprofiles.com/my/spools")
     expect(html).toContain("data-paste-inventory")
     expect(html).toContain("Paste JSON")
     expect(html).toContain("rgb")
     expect(html).toContain("hex")
     expect(html).toContain("data-inventory-format")
-    expect(html).toContain("Choose JSON")
+    expect(html).toContain("Choose JSON or CSV")
     expect(html).not.toContain("station-help")
   })
 

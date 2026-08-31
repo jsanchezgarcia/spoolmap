@@ -85,7 +85,7 @@ export function createAppView(dependencies: AppViewDependencies): {
    * the age needs no verb of its own.
    */
   function inventoryState(): string {
-    if (state.inventory.length === 0) return "3DFilamentProfiles JSON export"
+    if (state.inventory.length === 0) return "JSON or CSV with hex colors"
     const count = `${state.inventory.length} spool${state.inventory.length === 1 ? "" : "s"}`
     return metaGroup([
       count,
@@ -109,7 +109,7 @@ export function createAppView(dependencies: AppViewDependencies): {
     const detail = inventory
       ? loaded
         ? inventoryState()
-        : '<a class="source-link" href="https://3dfilamentprofiles.com/my/spools" target="_blank" rel="noreferrer">Export JSON from 3DFilamentProfiles <span aria-hidden="true">↗</span></a> or <button class="format-hint" type="button" data-inventory-format aria-expanded="false" aria-controls="inventory-format-popover">paste a JSON array with <code>rgb</code> or <code>hex</code></button>'
+        : 'JSON or CSV with hex colors · <a class="source-link" href="https://3dfilamentprofiles.com/my/spools" target="_blank" rel="noreferrer">3DFilamentProfiles <span aria-hidden="true">↗</span></a> or <button class="format-hint" type="button" data-inventory-format aria-expanded="false" aria-controls="inventory-format-popover">paste a list with <code>rgb</code> or <code>hex</code></button>'
       : state.project
         ? metaGroup([
             colorCount(state.project.filaments.length),
@@ -118,7 +118,7 @@ export function createAppView(dependencies: AppViewDependencies): {
         : "Bambu Studio or OrcaSlicer .3mf"
     const prompt = inventory ? inventoryPrompt() : null
     const fileName = inventory ? state.inventoryName : state.project?.fileName
-    const accept = inventory ? ".json,application/json" : ".3mf"
+    const accept = inventory ? ".json,.csv,application/json,text/csv" : ".3mf"
     const isLoading = state.loading.has(kind)
     const locked = state.loading.has("restore")
     const action = isLoading
@@ -128,7 +128,7 @@ export function createAppView(dependencies: AppViewDependencies): {
           ? "Re-import"
           : "Replace"
         : inventory
-          ? "Choose JSON"
+          ? "Choose JSON or CSV"
           : "Choose 3MF"
     /**
      * A status word is only earned when it carries news. "Required" repeats what

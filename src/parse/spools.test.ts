@@ -56,8 +56,63 @@ describe("inventory import", () => {
   })
 
   it("reports invalid JSON, missing lists, and lists with no usable colors", () => {
-    expect(() => parseSpoolExport("not json")).toThrow("not valid JSON")
+    expect(() => parseSpoolExport("not json")).toThrow("not valid JSON or CSV")
     expect(() => parseSpoolExport("{}")).toThrow("find a spool list")
     expect(() => parseSpoolExport('[{"rgb":"nope"}]')).toThrow("No spools with usable RGB colors")
+  })
+
+  it("reads nested Spoolman-style JSON by lifting filament fields", () => {
+    const [spool] = parseSpoolExport(
+      JSON.stringify([
+        {
+          id: 17,
+          remaining_weight: 640,
+          filament: {
+            name: "Signal Red",
+            material: "PLA",
+            color_hex: "FF0000",
+            vendor: { name: "Bambu Lab" },
+          },
+        },
+      ]),
+    )
+
+    expect(spool).toMatchObject({
+      id: "17",
+      brand: "Bambu Lab",
+      material: "PLA",
+      colorName: "Signal Red",
+      hex: "#FF0000",
+      remainingGrams: 640,
+    })
+  })
+
+  it("reads a 3DFilamentProfiles-style CSV and a semicolon spreadsheet", () => {
+    const [fromComma] = parseSpoolExport(
+      "brand,material,material_type,color,rgb,remaining_grams\nMaker,PLA,Matte,Forest,#1a2b3c,321.5\n",
+    )
+    expect(fromComma).toMatchObject({
+      brand: "Maker",
+      material: "PLA",
+      materialType: "Matte",
+      colorName: "Forest",
+      hex: "#1A2B3C",
+      remainingGrams: 321.5,
+    })
+
+    const [fromSemi] = parseSpoolExport(
+      "Manufacturer;Material;Colour Hex;Name\nPrusament;PETG;00ff00;Galaxy\n",
+    )
+    expect(fromSemi).toMatchObject({
+      brand: "Prusament",
+      material: "PETG",
+      colorName: "Galaxy",
+      hex: "#00FF00",
+    })
+  })
+
+  it("keeps quoted CSV commas inside a field", () => {
+    const [spool] = parseSpoolExport('brand,color,hex\n"Maker, Inc",Red,#ff0000\n')
+    expect(spool).toMatchObject({ brand: "Maker, Inc", colorName: "Red", hex: "#FF0000" })
   })
 })

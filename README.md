@@ -12,7 +12,7 @@ Spoolmap helps you choose filament from your full spool collection before loadin
 
 ![Four filament spools mapped by color to a multicolor printed owl.](https://spoolmap.com/spoolmap-social.png)
 
-Import a Bambu Studio or OrcaSlicer 3MF and a spool list: a [3DFilamentProfiles](https://3dfilamentprofiles.com/my/spools) JSON export, or any JSON array of spools with a color in `rgb` or `hex`. Brand, material, and color name are optional. Spoolmap ranks the closest owned colors, lets you choose substitutions plate by plate, and produces a remapped 3MF for Bambu Studio or OrcaSlicer.
+Import a Bambu Studio or OrcaSlicer 3MF and a spool list: a [3DFilamentProfiles](https://3dfilamentprofiles.com/my/spools) JSON or CSV export, or any JSON/CSV list of spools with a color in `rgb` or `hex`. Brand, material, and color name are optional. Spoolmap ranks the closest owned colors, lets you choose substitutions plate by plate, and produces a remapped 3MF for Bambu Studio or OrcaSlicer.
 
 ## Inventory JSON
 
@@ -32,7 +32,7 @@ A 3DFilamentProfiles export works as-is. A plain array is enough:
 ]
 ```
 
-Each object needs `rgb` or `hex`. `brand`, `material`, and `color` are optional.
+Each object needs `rgb` or `hex`. `brand`, `material`, and `color` are optional. A CSV with the same columns also works.
 
 Use **Try a sample project** on the home page if you just want to see the matching UI.
 
