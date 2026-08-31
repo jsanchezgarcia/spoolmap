@@ -85,3 +85,5 @@ Community 3MF files are untrusted input. The parser bounds archive expansion, me
 ## License
 
 [MIT](LICENSE)
+
+Spoolmap is unofficial and is not affiliated with, endorsed by, or associated with Bambu Lab, OrcaSlicer, or 3DFilamentProfiles. Their names and marks belong to their respective owners.
