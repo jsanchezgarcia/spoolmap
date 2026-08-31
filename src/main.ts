@@ -707,6 +707,7 @@ function render(): void {
     </main>
     <footer class="site-footer">
       <p>Spoolmap ${APP_VERSION} <span class="meta-sep" aria-hidden="true">·</span> <a href="https://github.com/jsanchezgarcia/spoolmap/blob/main/LICENSE">MIT</a> <span class="meta-sep" aria-hidden="true">·</span> Files stay in this browser</p>
+      <p>Unofficial — not affiliated with Bambu Lab, OrcaSlicer, or 3DFilamentProfiles</p>
     </footer>`
   bindFileControls()
   fitFileNames()

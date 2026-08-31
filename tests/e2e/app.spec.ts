@@ -97,6 +97,7 @@ test("renders the import workflow without horizontal page overflow", async ({ pa
   await expect(page.getByRole("button", { name: "Try a sample project" })).toBeVisible()
   await expect(page.getByRole("contentinfo")).toContainText("Files stay in this browser")
   await expect(page.getByRole("contentinfo")).toContainText("0.1.0")
+  await expect(page.getByRole("contentinfo")).toContainText("not affiliated with Bambu Lab")
   await expect(page.getByRole("link", { name: "Skip to content" })).toHaveAttribute("href", "#main")
   await expect(page.getByRole("region", { name: "Spool inventory" })).toBeVisible()
   await expect(page.getByRole("region", { name: "3MF project" })).toBeVisible()
@@ -122,7 +123,7 @@ test("loads a sample project without asking for files", async ({ page }, testInf
   )
   await page.getByRole("button", { name: "Try a sample project" }).click()
   await expect(page.getByRole("heading", { name: "Matches" })).toBeVisible()
-  await expect(page.getByText("Sample owl")).toBeVisible()
+  await expect(page.locator("#matches").getByText("Sample owl", { exact: true })).toBeVisible()
   await expect(
     page.getByRole("button", { name: /Download for Bambu Studio or Orca/ }),
   ).toBeEnabled()
