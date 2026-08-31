@@ -129,6 +129,21 @@ describe("spool matching", () => {
     expect(matches.map((match) => match.spool.id)).toEqual(["high", "low"])
   })
 
+  it("ranks a large inventory without changing the winner for an exact color", () => {
+    const inventory = Array.from({ length: 2500 }, (_, index) =>
+      spool(`spool-${index}`, {
+        hex:
+          index === 1842
+            ? "#FF0000"
+            : `#${(0x100000 + index).toString(16).slice(-6).toUpperCase()}`,
+        remainingGrams: index === 1842 ? 900 : 10,
+      }),
+    )
+    const matches = rankSpools(filament, inventory)
+    expect(defaultSelection(matches)).toBe("spool-1842")
+    expect(matches[0]).toMatchObject({ spool: { id: "spool-1842" }, deltaE: 0 })
+  })
+
   it("collapses duplicate products only in the short alternatives list", () => {
     const matches = rankSpools(filament, [
       spool("first"),

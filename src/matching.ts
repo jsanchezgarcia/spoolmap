@@ -1,6 +1,6 @@
-import { hexDeltaE } from "./color/ciede2000"
+import { deltaE00, hexToLab } from "./color/ciede2000"
 import { isMultiColor, spoolColors } from "./format"
-import type { LogicalFilament, PhysicalSpool, SpoolMatch } from "./types"
+import type { Lab, LogicalFilament, PhysicalSpool, SpoolMatch } from "./types"
 
 /**
  * Base polymers, longest first so a prefix test always resolves to the most
@@ -81,42 +81,54 @@ function purposeOf(value: string, multiColor: boolean): FilamentPurpose {
   return "ordinary"
 }
 
-/**
- * Purpose compatibility is deliberately symmetric. Support stock must not be
- * loaded for an ordinary part, and an ordinary spool must not be proposed for
- * a support interface merely because its base polymer and color happen to
- * match. The same rule applies to projects that explicitly request a
- * multi-color filament.
- */
-function purposeOk(filament: LogicalFilament, spool: PhysicalSpool): boolean {
-  const requested = `${filament.label} ${filament.material}`.toLowerCase()
-  const offered = `${spool.material} ${spool.materialType}`.toLowerCase()
-  return purposeOf(requested, false) === purposeOf(offered, isMultiColor(spool))
+type PreparedSpool = {
+  spool: PhysicalSpool
+  lab: Lab | null
+  family: string
+  finish: string | null
+  purpose: FilamentPurpose
+}
+
+const preparedSpools = new WeakMap<PhysicalSpool, PreparedSpool>()
+
+function prepareSpool(spool: PhysicalSpool): PreparedSpool {
+  const cached = preparedSpools.get(spool)
+  if (cached) return cached
+  const prepared: PreparedSpool = {
+    spool,
+    lab: hexToLab(spool.hex),
+    family: materialFamily(spool.material),
+    finish: finishOf(`${spool.material} ${spool.materialType}`),
+    purpose: purposeOf(`${spool.material} ${spool.materialType}`, isMultiColor(spool)),
+  }
+  preparedSpools.set(spool, prepared)
+  return prepared
 }
 
 function scoreSpool(
-  filament: LogicalFilament,
-  spool: PhysicalSpool,
+  filamentLab: Lab | null,
   wantedFamily: string,
   wantedFinish: string | null,
+  wantedPurpose: FilamentPurpose,
+  prepared: PreparedSpool,
 ): Omit<SpoolMatch, "rank"> {
-  const deltaE = hexDeltaE(filament.hex, spool.hex)
-  const rightPurpose = purposeOk(filament, spool)
-  const spoolFamily = materialFamily(spool.material)
-  const rightFamily = spoolFamily === wantedFamily
-  const spoolFinish = finishOf(`${spool.material} ${spool.materialType}`)
+  const deltaE = filamentLab && prepared.lab ? deltaE00(filamentLab, prepared.lab) : 999
+  const rightPurpose = prepared.purpose === wantedPurpose
+  const rightFamily = prepared.family === wantedFamily
   const finishMismatch =
-    rightFamily && wantedFinish !== spoolFinish && (wantedFinish !== null || spoolFinish !== null)
+    rightFamily &&
+    wantedFinish !== prepared.finish &&
+    (wantedFinish !== null || prepared.finish !== null)
 
   let score = deltaE
   if (!rightPurpose) score += WRONG_PURPOSE_PENALTY
   if (!rightFamily) score += FAMILY_PENALTY
-  else if (wantedFinish && spoolFinish && spoolFinish !== wantedFinish) {
+  else if (wantedFinish && prepared.finish && prepared.finish !== wantedFinish) {
     score += FINISH_PENALTY
   }
 
   return {
-    spool,
+    spool: prepared.spool,
     deltaE,
     score,
     materialOk: rightFamily && rightPurpose,
@@ -136,9 +148,13 @@ function scoreSpool(
 export function rankSpools(filament: LogicalFilament, spools: PhysicalSpool[]): SpoolMatch[] {
   const wantedFamily = materialFamily(filament.material)
   const wantedFinish = finishOf(`${filament.label} ${filament.material}`)
+  const wantedPurpose = purposeOf(`${filament.label} ${filament.material}`, false)
+  const filamentLab = hexToLab(filament.hex)
 
   return spools
-    .map((spool) => scoreSpool(filament, spool, wantedFamily, wantedFinish))
+    .map((spool) =>
+      scoreSpool(filamentLab, wantedFamily, wantedFinish, wantedPurpose, prepareSpool(spool)),
+    )
     .sort(
       (a, b) =>
         // A list presented as recommendations must begin with the spool the
