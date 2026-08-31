@@ -139,6 +139,10 @@ label:has(input:focus-visible) {
   gap: 0 10px;
 }
 
+.site-footer p + p {
+  margin-top: 6px;
+}
+
 .site-footer a {
   color: inherit;
 }
