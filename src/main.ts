@@ -339,6 +339,10 @@ async function exportProject(): Promise<void> {
 
 /* ---------------------------------------------------------------- history */
 
+function isSampleHistory(entry: SessionSummary): boolean {
+  return entry.modelName === SAMPLE_MODEL_NAME || entry.projectTitle === SAMPLE_PROJECT_TITLE
+}
+
 function buildSummary(id: string): SessionSummary | null {
   if (!state.project || state.inventory.length === 0) return null
   return {
@@ -379,8 +383,10 @@ const sessionLifecycle = createSessionLifecycle({
     }
   },
   onChange: (snapshot) => {
-    state.sessionId = snapshot.sessionId
-    state.history = snapshot.history
+    state.history = snapshot.history.filter((entry) => !isSampleHistory(entry))
+    state.sessionId = state.history.some((entry) => entry.id === snapshot.sessionId)
+      ? snapshot.sessionId
+      : null
   },
 })
 
@@ -544,7 +550,7 @@ async function loadSample(): Promise<void> {
       revokeProjectUrls(project)
       return
     }
-    const generation = beginPlanChange()
+    beginPlanChange()
     if (state.project) revokeProjectUrls(state.project)
     state.inventory = inventory
     state.inventoryText = sampleInventoryText()
@@ -564,7 +570,7 @@ async function loadSample(): Promise<void> {
         ? `${SAMPLE_PROJECT_TITLE} loaded · ${inventory.length} spools saved on this device`
         : `${SAMPLE_PROJECT_TITLE} loaded · ${inventory.length} spools; this browser would not save them`,
     })
-    void startSession(generation)
+    // Recents is for imported work. The sample stays one click on the landing page.
   } catch (error) {
     if (requestInventory !== inventoryRequest || requestModel !== modelRequest) return
     setNotice({

@@ -136,6 +136,13 @@ test("loads a sample project without asking for files", async ({ page }, testInf
     page.getByRole("button", { name: /Download for Bambu Studio or Orca/ }),
   ).toBeEnabled()
   await expect(page.getByText(/ΔE: 0 exact/)).toBeVisible()
+  await expect(page.getByText("Recent projects")).toHaveCount(0)
+  await page.getByRole("button", { name: "Clear project" }).click()
+  await page
+    .getByRole("dialog", { name: "Clear project?" })
+    .getByRole("button", { name: "Clear project" })
+    .click()
+  await expect(page.getByRole("heading", { name: "Recents" })).toHaveCount(0)
 })
 
 test("shows a JSON inventory example from the landing hint", async ({ page }, testInfo) => {
