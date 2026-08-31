@@ -55,6 +55,11 @@ html {
   scroll-behavior: smooth;
 }
 
+html,
+body {
+  min-height: 100%;
+}
+
 body {
   margin: 0;
   min-width: 0;
@@ -124,10 +129,26 @@ label:has(input:focus-visible) {
   transform: none;
 }
 
+#app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+@supports (height: 100dvh) {
+  body,
+  #app {
+    min-height: 100dvh;
+  }
+}
+
 .site-footer {
+  flex: 0 0 auto;
   width: min(1500px, 100%);
-  margin: 0 auto;
-  padding: 0 clamp(18px, 4vw, 60px) 36px;
+  margin-top: auto;
+  margin-inline: auto;
+  padding: 18px clamp(18px, 4vw, 60px) max(24px, env(safe-area-inset-bottom));
+  border-top: 1px solid var(--ink);
   color: var(--muted);
   font: 400 var(--text-caps) / 1.5 var(--mono);
 }
@@ -185,9 +206,11 @@ label:has(input:focus-visible) {
 }
 
 .station-actions {
-  display: grid;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  justify-content: flex-end;
   gap: 8px;
-  justify-items: stretch;
 }
 
 .row-legend small {
@@ -440,9 +463,10 @@ label:has(input:focus-visible) {
 }
 
 main {
+  flex: 1 0 auto;
   width: min(1500px, 100%);
   margin: 0 auto;
-  padding: 0 clamp(18px, 4vw, 60px) 90px;
+  padding: 0 clamp(18px, 4vw, 60px) 36px;
 }
 
 .intro {
@@ -642,11 +666,12 @@ h1 {
   grid-column: 1 / -1;
 }
 
-.inputs:not(.is-compact) .file-station:not(.is-loaded) .file-action > span {
+.inputs:not(.is-compact) .file-station:not(.is-loaded) .file-action > span,
+.inputs:not(.is-compact) .file-station:not(.is-loaded) .station-actions .text-button {
   min-width: 126px;
   min-height: 50px;
   padding-inline: 18px;
-  font-size: var(--text-meta);
+  font: 500 var(--text-meta) / 1 var(--mono);
 }
 
 .file-station.is-loaded .drop-hint {
@@ -2666,7 +2691,7 @@ option {
   }
 
   main {
-    padding-bottom: 60px;
+    padding-bottom: 28px;
   }
 
   .intro {
@@ -2836,15 +2861,22 @@ option {
     gap: 10px;
   }
 
-  .inputs:not(.is-compact) .file-station:not(.is-loaded) .station-actions,
-  .inputs:not(.is-compact) .file-station:not(.is-loaded) .file-action {
+  .inputs:not(.is-compact) .file-station:not(.is-loaded) .station-actions {
     grid-column: 1;
     grid-row: 3;
-    justify-self: stretch;
+    justify-content: stretch;
+    width: 100%;
   }
 
-  .inputs:not(.is-compact) .file-station:not(.is-loaded) .file-action > span {
+  .inputs:not(.is-compact) .file-station:not(.is-loaded) .file-action,
+  .inputs:not(.is-compact) .file-station:not(.is-loaded) .station-actions .text-button {
+    flex: 1 1 0;
+  }
+
+  .inputs:not(.is-compact) .file-station:not(.is-loaded) .file-action > span,
+  .inputs:not(.is-compact) .file-station:not(.is-loaded) .station-actions .text-button {
     width: 100%;
+    min-width: 0;
   }
 
   /* The identity runs three or four lines here, so the thumb tops out with it. */
