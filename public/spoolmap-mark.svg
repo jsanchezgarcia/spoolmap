@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-labelledby="title">
+  <title id="title">Spoolmap</title>
+  <g transform="translate(34 50)"><circle r="31" fill="#121719"/><circle r="23" fill="#5e68c9"/><path d="M4 0C4-6-1-9-7-8-16-7-19 7-13 13-6 22 10 20 15 8 23-6 15-19 2-20" fill="none" stroke="#cbc9f2" stroke-width="4" stroke-linecap="round"/><circle r="9" fill="#121719"/><circle r="4" fill="#eceeef"/></g>
+  <g transform="translate(67 50)"><circle r="31" fill="#121719"/><circle r="23" fill="#2f9a86"/><path d="M4 0C4-6-1-9-7-8-16-7-19 7-13 13-6 22 10 20 15 8 23-6 15-19 2-20" fill="none" stroke="#bce5dc" stroke-width="4" stroke-linecap="round"/><circle r="9" fill="#121719"/><circle r="4" fill="#eceeef"/></g>
+</svg>
