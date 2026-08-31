@@ -17,6 +17,13 @@ describe("sample project", () => {
     expect(spools.some(({ brand }) => brand === "Polymaker")).toBe(true)
   })
 
+  it("reuses the synthesized archive for later clicks in the same session", async () => {
+    const first = createSampleProject()
+    const second = createSampleProject()
+    expect(second).toBe(first)
+    expect(await second).toBe(await first)
+  })
+
   it("opens as a two-plate Bambu-style 3MF with four design colors", async () => {
     const project = await parseThreeMfData(await createSampleProject(), SAMPLE_MODEL_NAME)
     expect(project.title).toBe(SAMPLE_PROJECT_TITLE)

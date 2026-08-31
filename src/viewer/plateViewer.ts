@@ -216,9 +216,23 @@ export class PlateViewer {
     }
   }
 
+  isAttachedTo(container: HTMLElement): boolean {
+    return this.renderer?.domElement.parentElement === container
+  }
+
+  /** Recalculate the canvas after the host moved without being remounted. */
+  relayout(): void {
+    const host = this.renderer?.domElement.parentElement
+    if (host) this.resize(host)
+  }
+
   mount(container: HTMLElement): void {
     if (this.webglFailed) {
       this.mountFallback(container, "This browser cannot draw the 3D preview.")
+      return
+    }
+    if (this.renderer && this.isAttachedTo(container)) {
+      this.resize(container)
       return
     }
     if (!this.renderer) {
