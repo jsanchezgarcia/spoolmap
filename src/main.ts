@@ -10,10 +10,18 @@ import { readStoredSpools } from "./storage/inventory"
 import { createSessionLifecycle } from "./storage/sessionLifecycle"
 import { exportReadiness } from "./planning/readiness"
 import type { FilamentChoice, PhysicalSpool } from "./types"
+import {
+  SAMPLE_INVENTORY_NAME,
+  SAMPLE_MODEL_NAME,
+  createSampleProject,
+  sampleInventoryText,
+} from "./sample/demoProject"
 import { createAppView } from "./ui/appView"
 import { createConfirmDialog } from "./ui/confirmDialog"
 import { createFeedbackDialog } from "./ui/feedbackDialog"
 import { createMatchView, filterSpoolMenu } from "./ui/matchView"
+import { createPasteInventoryDialog } from "./ui/pasteInventoryDialog"
+import { APP_VERSION } from "./version"
 import type { PlateViewer, ViewPreset } from "./viewer/plateViewer"
 
 const STORAGE_KEY = "spoolmap.inventory.v1"
@@ -110,6 +118,7 @@ const state: AppState = {
 const app = document.querySelector<HTMLDivElement>("#app")!
 const confirmAction = createConfirmDialog()
 const openFeedback = createFeedbackDialog()
+const pasteInventory = createPasteInventoryDialog()
 let plateViewer: PlateViewer | null = null
 let plateViewerPromise: Promise<PlateViewer> | null = null
 
@@ -174,7 +183,7 @@ function setExportButtonBusy(busy: boolean): void {
   button.disabled = busy
   label.innerHTML = busy
     ? '<i class="spinner"></i>Preparing download…'
-    : "Download for Bambu Studio"
+    : "Download for Bambu Studio or Orca"
 }
 
 /**
@@ -485,6 +494,87 @@ function forgetInventory(): void {
   render()
 }
 
+async function goHome(): Promise<void> {
+  if (!state.project && !state.loading.size) {
+    window.scrollTo({ top: 0, behavior: "smooth" })
+    return
+  }
+  if (
+    await confirmAction({
+      title: "Return to the start?",
+      body: "This clears the open 3MF so you can start again. Your spool inventory and saved recents stay.",
+      confirmLabel: "Go to start",
+    })
+  ) {
+    clearProject()
+    window.scrollTo({ top: 0 })
+  }
+}
+
+async function pasteInventoryList(): Promise<void> {
+  const text = await pasteInventory()
+  if (text === null) return
+  const file = new File([text], "pasted-spools.json", { type: "application/json" })
+  await importInventory(file)
+}
+
+async function loadSample(): Promise<void> {
+  if (state.loading.size) return
+  const requestInventory = ++inventoryRequest
+  const requestModel = ++modelRequest
+  ++restoreRequest
+  state.loading.delete("restore")
+  state.loading.add("inventory")
+  state.loading.add("model")
+  setNotice(null)
+  render()
+  try {
+    const inventory = parseSpoolExport(sampleInventoryText())
+    const bytes = await createSampleProject()
+    const project = await parseThreeMfData(bytes, SAMPLE_MODEL_NAME)
+    if (requestInventory !== inventoryRequest || requestModel !== modelRequest) {
+      revokeProjectUrls(project)
+      return
+    }
+    const viewer = await ensurePlateViewer()
+    if (requestInventory !== inventoryRequest || requestModel !== modelRequest) {
+      revokeProjectUrls(project)
+      return
+    }
+    const generation = beginPlanChange()
+    if (state.project) revokeProjectUrls(state.project)
+    state.inventory = inventory
+    state.inventoryText = sampleInventoryText()
+    state.inventoryName = SAMPLE_INVENTORY_NAME
+    const saved = saveInventory(Date.now())
+    state.project = project
+    state.modelBytes = bytes.buffer.slice(
+      bytes.byteOffset,
+      bytes.byteOffset + bytes.byteLength,
+    ) as ArrayBuffer
+    viewer.openProject(state.modelBytes.slice(0))
+    state.selectedPlateId = project.plates[0]?.id ?? null
+    rebuildChoices(false)
+    setNotice({
+      kind: saved ? "success" : "error",
+      text: saved
+        ? `Sample owl loaded · ${inventory.length} spools saved on this device`
+        : `Sample owl loaded · ${inventory.length} spools; this browser would not save them`,
+    })
+    void startSession(generation)
+  } catch (error) {
+    if (requestInventory !== inventoryRequest || requestModel !== modelRequest) return
+    setNotice({
+      kind: "error",
+      text: error instanceof Error ? error.message : "The sample project could not be loaded.",
+    })
+  } finally {
+    if (requestInventory === inventoryRequest) state.loading.delete("inventory")
+    if (requestModel === modelRequest) state.loading.delete("model")
+    if (requestInventory === inventoryRequest && requestModel === modelRequest) render()
+  }
+}
+
 function clearProject(): void {
   ++modelRequest
   ++restoreRequest
@@ -556,6 +646,8 @@ function focusSelector(element: Element | null): string | null {
     "data-clear-inventory",
     "data-clear-model",
     "data-clear-history",
+    "data-load-sample",
+    "data-paste-inventory",
   ]) {
     if (element.hasAttribute(attribute)) return `[${attribute}]`
   }
@@ -567,7 +659,7 @@ function render(): void {
   const recentWasOpen = document.querySelector<HTMLDetailsElement>(".recent-drawer")?.open
   app.innerHTML = `
     <header class="topbar">
-      <a class="brand" href="#" aria-label="Spoolmap home">
+      <a class="brand" href="/" aria-label="Spoolmap home">
         <picture>
           <source srcset="/spoolmap-logo-dark.svg" media="(prefers-color-scheme: dark)">
           <img class="brand-logo" src="/spoolmap-logo.svg" alt="Spoolmap">
@@ -581,7 +673,7 @@ function render(): void {
         </a>
       </nav>
     </header>
-    <main>
+    <main id="main">
       ${
         state.project
           ? ""
@@ -598,6 +690,7 @@ function render(): void {
             <li><span>2</span><strong>Choose</strong><small>Spools for each plate</small></li>
             <li><span>3</span><strong>Confirm</strong><small>AMS slots in Studio</small></li>
           </ol>
+          <button class="sample-action" type="button" data-load-sample ${state.loading.size ? "disabled" : ""}>Try a sample project</button>
         </div>
       </section>`
       }
@@ -611,7 +704,10 @@ function render(): void {
 
       ${state.project ? renderMatches() : ""}
       ${renderHistory()}
-    </main>`
+    </main>
+    <footer class="site-footer">
+      <p>Spoolmap ${APP_VERSION} <span class="meta-sep" aria-hidden="true">·</span> <a href="https://github.com/jsanchezgarcia/spoolmap/blob/main/LICENSE">MIT</a> <span class="meta-sep" aria-hidden="true">·</span> Files stay in this browser</p>
+    </footer>`
   bindFileControls()
   fitFileNames()
   const viewerHost = document.querySelector<HTMLElement>("[data-plate-viewer]")
@@ -808,6 +904,23 @@ app.addEventListener("click", async (event) => {
     return
   }
 
+  if (target.closest("[data-load-sample]")) {
+    void loadSample()
+    return
+  }
+
+  if (target.closest("[data-paste-inventory]")) {
+    void pasteInventoryList()
+    return
+  }
+
+  const brand = target.closest<HTMLAnchorElement>(".brand")
+  if (brand) {
+    event.preventDefault()
+    void goHome()
+    return
+  }
+
   const spoolMenuTrigger = target.closest<HTMLButtonElement>("[data-spool-menu]")
   if (spoolMenuTrigger) {
     const index = Number(spoolMenuTrigger.dataset.spoolMenu)
@@ -846,7 +959,15 @@ app.addEventListener("click", async (event) => {
   }
 
   if (target.closest("[data-clear-model]")) {
-    clearProject()
+    if (
+      await confirmAction({
+        title: "Clear project?",
+        body: "This removes the open 3MF from this screen. Your spool inventory and saved recents stay.",
+        confirmLabel: "Clear project",
+      })
+    ) {
+      clearProject()
+    }
     return
   }
 

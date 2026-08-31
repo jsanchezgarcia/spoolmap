@@ -28,6 +28,12 @@ body:
     validations:
       required: true
   - type: input
+    id: version
+    attributes:
+      label: Spoolmap version
+      description: Shown in the footer, for example 0.1.0.
+      placeholder: 0.1.0
+  - type: input
     id: browser
     attributes:
       label: Browser and operating system

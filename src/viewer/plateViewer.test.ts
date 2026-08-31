@@ -45,6 +45,16 @@ describe("viewer security boundary", () => {
     expect(status.classList.hidden).toBe(false)
   })
 
+  it("shows a fallback instead of throwing when WebGL cannot start", () => {
+    const viewer = new PlateViewer()
+    const container = new FakeElement()
+    Object.assign(viewer, { webglFailed: true })
+
+    expect(() => viewer.mount(container as unknown as HTMLElement)).not.toThrow()
+    expect(container.children.length).toBeGreaterThan(0)
+    expect(container.children.some((child) => child.className === "viewer-status")).toBe(true)
+  })
+
   it("fully releases project state when the viewer is closed", () => {
     const viewer = new PlateViewer()
     const terminate = vi.fn()

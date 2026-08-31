@@ -116,6 +116,10 @@ export function createAppView(dependencies: AppViewDependencies): {
             `${state.project.plates.length || 1} plate${state.project.plates.length === 1 ? "" : "s"}`,
           ])
         : "Bambu Studio or OrcaSlicer .3mf"
+    const help =
+      inventory && !loaded
+        ? "On 3DFilamentProfiles open My Spools and export JSON. Or paste any JSON array of spools — each row needs a color in <code>rgb</code> or <code>hex</code>; <code>brand</code>, <code>material</code>, and <code>color</code> are optional."
+        : null
     const prompt = inventory ? inventoryPrompt() : null
     const fileName = inventory ? state.inventoryName : state.project?.fileName
     const accept = inventory ? ".json,application/json" : ".3mf"
@@ -145,12 +149,20 @@ export function createAppView(dependencies: AppViewDependencies): {
           ${fileName ? fileMark(fileName, "station-file") : ""}
         </div>
         <span class="drop-hint" aria-hidden="true">Drop a file anywhere in this panel</span>
-        <label class="file-action">
-          <input type="file" data-file="${kind}" accept="${accept}" ${isLoading || locked ? "disabled" : ""}
-            aria-label="${action} — ${label}. Or drop a file onto this panel.">
-          <span>${isLoading ? '<i class="spinner"></i> ' : ""}${action}</span>
-        </label>
+        <div class="station-actions">
+          <label class="file-action">
+            <input type="file" data-file="${kind}" accept="${accept}" ${isLoading || locked ? "disabled" : ""}
+              aria-label="${action} — ${label}. Or drop a file onto this panel.">
+            <span>${isLoading ? '<i class="spinner"></i> ' : ""}${action}</span>
+          </label>
+          ${
+            inventory && !loaded
+              ? `<button class="text-button" type="button" data-paste-inventory ${isLoading || locked ? "disabled" : ""}>Paste JSON</button>`
+              : ""
+          }
+        </div>
         ${loaded ? `<button class="text-button station-clear" type="button" data-clear-${kind}>${inventory ? "Clear inventory" : "Clear project"}</button>` : ""}
+        ${help ? `<p class="station-help">${help}</p>` : ""}
         ${prompt ? `<p class="station-prompt">${escapeHtml(prompt)}</p>` : ""}
       </section>`
   }
