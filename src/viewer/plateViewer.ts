@@ -125,6 +125,7 @@ export class PlateViewer {
   private readonly camera = new PerspectiveCamera(36, 1, 0.1, 10000)
   private readonly model = new Group()
   private renderer: WebGLRenderer | null = null
+  private webglFailed = false
   private controls: OrbitControls | null = null
   private grid: GridHelper | null = null
   private worker: Worker | null = null
@@ -187,6 +188,16 @@ export class PlateViewer {
     this.labels = null
   }
 
+  private mountFallback(container: HTMLElement, message: string): void {
+    container.replaceChildren()
+    this.labels = null
+    this.status = container.ownerDocument.createElement("div")
+    this.status.className = "viewer-status"
+    this.status.setAttribute("role", "status")
+    container.append(this.status)
+    this.setStatus(message, false)
+  }
+
   private startWorker(): void {
     this.worker?.terminate()
     this.worker = new Worker(new URL("./threeMfWorker.ts", import.meta.url), {
@@ -206,11 +217,21 @@ export class PlateViewer {
   }
 
   mount(container: HTMLElement): void {
+    if (this.webglFailed) {
+      this.mountFallback(container, "This browser cannot draw the 3D preview.")
+      return
+    }
     if (!this.renderer) {
-      this.renderer = new WebGLRenderer({
-        antialias: true,
-        powerPreference: "high-performance",
-      })
+      try {
+        this.renderer = new WebGLRenderer({
+          antialias: true,
+          powerPreference: "high-performance",
+        })
+      } catch {
+        this.webglFailed = true
+        this.mountFallback(container, "This browser cannot draw the 3D preview.")
+        return
+      }
       this.renderer.outputColorSpace = SRGBColorSpace
       this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5))
       this.renderer.domElement.setAttribute(

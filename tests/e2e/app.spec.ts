@@ -92,8 +92,18 @@ test("renders the import workflow without horizontal page overflow", async ({ pa
   await expect(
     page.getByRole("link", { name: /Export JSON from 3DFilamentProfiles/ }),
   ).toHaveAttribute("href", "https://3dfilamentprofiles.com/my/spools")
+  await expect(page.getByText(/paste a JSON array with/i)).toBeVisible()
+  await expect(page.getByRole("button", { name: "Paste JSON" })).toBeVisible()
+  await expect(page.getByRole("button", { name: "Try a sample project" })).toBeVisible()
+  await expect(page.getByRole("contentinfo")).toContainText("Files stay in this browser")
+  await expect(page.getByRole("contentinfo")).toContainText("0.1.0")
+  await expect(page.getByRole("contentinfo")).toContainText("not affiliated with Bambu Lab")
+  await expect(page.getByRole("link", { name: "Skip to content" })).toHaveAttribute("href", "#main")
   await expect(page.getByRole("region", { name: "Spool inventory" })).toBeVisible()
   await expect(page.getByRole("region", { name: "3MF project" })).toBeVisible()
+  if ((page.viewportSize()?.width ?? 1000) <= 1120) {
+    await expect(page.locator(".drop-hint").first()).toBeHidden()
+  }
   await expect(page.getByRole("link", { name: "View source on GitHub" })).toHaveAttribute(
     "href",
     "https://github.com/jsanchezgarcia/spoolmap",
@@ -102,8 +112,104 @@ test("renders the import workflow without horizontal page overflow", async ({ pa
   const dimensions = await page.evaluate(() => ({
     clientWidth: document.documentElement.clientWidth,
     scrollWidth: document.documentElement.scrollWidth,
+    viewportHeight: window.innerHeight,
+    footerBottom: document.querySelector("footer")?.getBoundingClientRect().bottom ?? 0,
+    chooseTop: document.querySelector(".file-action > span")?.getBoundingClientRect().top ?? 0,
+    pasteTop: document.querySelector("[data-paste-inventory]")?.getBoundingClientRect().top ?? 0,
   }))
   expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth)
+  expect(dimensions.footerBottom).toBeGreaterThan(dimensions.viewportHeight - 8)
+  expect(Math.abs(dimensions.chooseTop - dimensions.pasteTop)).toBeLessThan(4)
+})
+
+test("loads a sample project without asking for files", async ({ page }, testInfo) => {
+  test.skip(
+    testInfo.project.name !== "chromium-desktop",
+    "The sample path is covered once; other projects still exercise the landing CTA.",
+  )
+  await page.getByRole("button", { name: "Try a sample project" }).click()
+  await expect(page.getByRole("heading", { name: "Matches" })).toBeVisible()
+  await expect(
+    page.locator("#matches").getByText("Sample toadstool", { exact: true }),
+  ).toBeVisible()
+  await expect(
+    page.getByRole("button", { name: /Download for Bambu Studio or Orca/ }),
+  ).toBeEnabled()
+  await expect(page.getByText(/ΔE: 0 exact/)).toBeVisible()
+  await expect(page.getByText("Recent projects")).toHaveCount(0)
+  await page.getByRole("button", { name: "Clear project" }).click()
+  await page
+    .getByRole("dialog", { name: "Clear project?" })
+    .getByRole("button", { name: "Clear project" })
+    .click()
+  await expect(page.getByRole("heading", { name: "Recents" })).toHaveCount(0)
+})
+
+test("shows a JSON inventory example from the landing hint", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium-desktop")
+  await page.getByRole("button", { name: /paste a JSON array with/i }).click()
+  const example = page.getByRole("dialog", { name: "JSON inventory example" })
+  await expect(example).toBeVisible()
+  await expect(example).toContainText("rgb")
+  await expect(example).toContainText("#F0E6D2")
+  await expect(example.getByRole("link", { name: /Format notes on GitHub/ })).toHaveAttribute(
+    "href",
+    "https://github.com/jsanchezgarcia/spoolmap#inventory-json",
+  )
+  await page.keyboard.press("Escape")
+  await expect(example).toBeHidden()
+})
+
+test("closes the paste JSON dialog from Cancel without filling the field", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium-desktop")
+  await page.getByRole("button", { name: "Paste JSON" }).click()
+  const dialog = page.getByRole("dialog", { name: "Paste a JSON inventory" })
+  await expect(dialog).toBeVisible()
+  await dialog.getByRole("button", { name: "Cancel" }).click()
+  await expect(dialog).toBeHidden()
+  await expect(page.getByRole("button", { name: "Paste JSON" })).toBeVisible()
+})
+
+test("imports a pasted JSON spool list", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium-desktop")
+  await page.getByRole("button", { name: "Paste JSON" }).click()
+  const dialog = page.getByRole("dialog", { name: "Paste a JSON inventory" })
+  await expect(dialog).toBeVisible()
+  await dialog.getByRole("textbox", { name: "JSON" }).fill(
+    JSON.stringify([
+      {
+        brand: "Pasted",
+        material: "PLA",
+        color: "Signal red",
+        rgb: "#ff0000",
+      },
+    ]),
+  )
+  await dialog.getByRole("button", { name: "Use this list" }).click()
+  await expect(page.getByRole("region", { name: "Spool inventory" })).toContainText("1 spool")
+  await expect(page.getByRole("status")).toContainText("1 spool saved on this device")
+})
+
+test("confirms before clearing an open project", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium-desktop")
+  await importFixture(page)
+  await page.getByRole("button", { name: "Clear project" }).click()
+  const dialog = page.getByRole("dialog", { name: "Clear project?" })
+  await expect(dialog).toBeVisible()
+  await dialog.getByRole("button", { name: "Keep it" }).click()
+  await expect(page.getByRole("heading", { name: "Matches" })).toBeVisible()
+
+  await page.getByRole("button", { name: "Clear project" }).click()
+  await page
+    .getByRole("dialog", { name: "Clear project?" })
+    .getByRole("button", { name: "Clear project" })
+    .click()
+  await expect(
+    page.getByRole("heading", { name: "Choose your spools before loading the AMS." }),
+  ).toBeVisible()
+  await expect(page.getByRole("region", { name: "Spool inventory" })).toContainText("6 spools")
 })
 
 test("sends feedback without leaving Spoolmap", async ({ page }) => {
@@ -435,7 +541,7 @@ test("imports, validates, exports, and restores a complete plan", async ({ page 
   await importFixture(page)
   await expect(page.getByText("Ready to export", { exact: true })).toBeVisible()
   const downloadButton = page.getByRole("button", {
-    name: /Download for Bambu Studio/,
+    name: /Download for Bambu Studio or Orca/,
   })
   await expect(downloadButton).toBeEnabled()
 
@@ -505,7 +611,7 @@ test("downloads on an alternate hosted origin too", async ({ page }, testInfo) =
   await importFixture(page)
 
   const downloadButton = page.getByRole("button", {
-    name: /Download for Bambu Studio/,
+    name: /Download for Bambu Studio or Orca/,
   })
   await expect(downloadButton).toBeEnabled()
   await expect(page.getByRole("button", { name: "More ways to export this project" })).toHaveCount(
