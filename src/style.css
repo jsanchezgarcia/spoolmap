@@ -580,6 +580,68 @@ h1 {
   text-decoration-color: currentColor;
 }
 
+.format-hint {
+  display: inline;
+  padding: 0;
+  border: 0;
+  color: inherit;
+  background: none;
+  font: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--strong-line);
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.format-hint:hover,
+.format-hint[aria-expanded="true"] {
+  color: var(--signal);
+  text-decoration-color: currentColor;
+}
+
+.inventory-format-popover {
+  position: fixed;
+  z-index: 50;
+  width: min(420px, calc(100vw - 24px));
+  padding: 14px 16px;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--ink);
+  box-shadow: 8px 10px 0 rgba(0, 0, 0, 0.36);
+}
+
+.inventory-format-popover p {
+  color: var(--muted);
+  font: 400 var(--text-caps) / 1.45 var(--body);
+}
+
+.inventory-format-popover p + pre,
+.inventory-format-popover pre + p {
+  margin-top: 10px;
+}
+
+.inventory-format-popover pre,
+.inventory-format-example {
+  margin: 0;
+  padding: 10px 12px;
+  overflow: auto;
+  color: var(--ink-soft);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  font: 400 var(--text-caps) / 1.45 var(--mono);
+  white-space: pre;
+}
+
+.inventory-format-popover a,
+.inventory-format-popover code,
+.inventory-format-example {
+  color: inherit;
+}
+
+.inventory-format-example {
+  margin-top: 12px;
+}
+
 .inputs {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -3130,7 +3192,8 @@ option {
     background: rgba(18, 23, 25, 0.055);
   }
 
-  .spool-menu {
+  .spool-menu,
+  .inventory-format-popover {
     box-shadow: 8px 10px 0 rgba(18, 23, 25, 0.12);
   }
 

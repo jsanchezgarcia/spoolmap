@@ -21,6 +21,7 @@ import { createAppView } from "./ui/appView"
 import { createConfirmDialog } from "./ui/confirmDialog"
 import { createFeedbackDialog } from "./ui/feedbackDialog"
 import { createMatchView, filterSpoolMenu } from "./ui/matchView"
+import { createInventoryFormatPopover } from "./ui/inventoryFormatPopover"
 import { createPasteInventoryDialog } from "./ui/pasteInventoryDialog"
 import { APP_VERSION } from "./version"
 import type { PlateViewer, ViewPreset } from "./viewer/plateViewer"
@@ -120,6 +121,7 @@ const app = document.querySelector<HTMLDivElement>("#app")!
 const confirmAction = createConfirmDialog()
 const openFeedback = createFeedbackDialog()
 const pasteInventory = createPasteInventoryDialog()
+const inventoryFormat = createInventoryFormatPopover()
 let plateViewer: PlateViewer | null = null
 let plateViewerPromise: Promise<PlateViewer> | null = null
 
@@ -649,6 +651,7 @@ function focusSelector(element: Element | null): string | null {
     "data-clear-history",
     "data-load-sample",
     "data-paste-inventory",
+    "data-inventory-format",
   ]) {
     if (element.hasAttribute(attribute)) return `[${attribute}]`
   }
@@ -711,6 +714,7 @@ function render(): void {
       <p>Unofficial — not affiliated with Bambu Lab, OrcaSlicer, or 3DFilamentProfiles</p>
     </footer>`
   bindFileControls()
+  bindInventoryFormatHint()
   fitFileNames()
   const viewerHost = document.querySelector<HTMLElement>("[data-plate-viewer]")
   if (viewerHost) {
@@ -850,6 +854,18 @@ async function importModel(file: File): Promise<void> {
   }
 }
 
+function bindInventoryFormatHint(): void {
+  const hint = document.querySelector<HTMLElement>("[data-inventory-format]")
+  if (!hint) {
+    inventoryFormat.hide()
+    return
+  }
+  hint.addEventListener("mouseenter", () => inventoryFormat.preview(hint))
+  hint.addEventListener("mouseleave", () => inventoryFormat.delayHide())
+  hint.addEventListener("focus", () => inventoryFormat.preview(hint))
+  hint.addEventListener("blur", () => inventoryFormat.delayHide())
+}
+
 function bindFileControls(): void {
   document.querySelectorAll<HTMLInputElement>("[data-file]").forEach((input) => {
     input.addEventListener("change", () => {
@@ -913,6 +929,12 @@ app.addEventListener("click", async (event) => {
 
   if (target.closest("[data-paste-inventory]")) {
     void pasteInventoryList()
+    return
+  }
+
+  const formatHint = target.closest<HTMLElement>("[data-inventory-format]")
+  if (formatHint) {
+    inventoryFormat.toggle(formatHint)
     return
   }
 

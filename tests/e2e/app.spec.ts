@@ -138,6 +138,21 @@ test("loads a sample project without asking for files", async ({ page }, testInf
   await expect(page.getByText(/ΔE: 0 exact/)).toBeVisible()
 })
 
+test("shows a JSON inventory example from the landing hint", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium-desktop")
+  await page.getByRole("button", { name: /paste a JSON array with/i }).click()
+  const example = page.getByRole("dialog", { name: "JSON inventory example" })
+  await expect(example).toBeVisible()
+  await expect(example).toContainText("rgb")
+  await expect(example).toContainText("#F0E6D2")
+  await expect(example.getByRole("link", { name: /Format notes on GitHub/ })).toHaveAttribute(
+    "href",
+    "https://github.com/jsanchezgarcia/spoolmap#inventory-json",
+  )
+  await page.keyboard.press("Escape")
+  await expect(example).toBeHidden()
+})
+
 test("closes the paste JSON dialog from Cancel without filling the field", async ({
   page,
 }, testInfo) => {

@@ -33,6 +33,7 @@ describe("app view", () => {
     expect(html).toContain("Paste JSON")
     expect(html).toContain("rgb")
     expect(html).toContain("hex")
+    expect(html).toContain("data-inventory-format")
     expect(html).toContain("Choose JSON")
     expect(html).not.toContain("station-help")
   })

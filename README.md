@@ -14,6 +14,26 @@ Spoolmap helps you choose filament from your full spool collection before loadin
 
 Import a Bambu Studio or OrcaSlicer 3MF and a spool list: a [3DFilamentProfiles](https://3dfilamentprofiles.com/my/spools) JSON export, or any JSON array of spools with a color in `rgb` or `hex`. Brand, material, and color name are optional. Spoolmap ranks the closest owned colors, lets you choose substitutions plate by plate, and produces a remapped 3MF for Bambu Studio or OrcaSlicer.
 
+## Inventory JSON
+
+A 3DFilamentProfiles export works as-is. A plain array is enough:
+
+```json
+[
+  {
+    "brand": "Bambu Lab",
+    "material": "PLA",
+    "color": "Orange",
+    "rgb": "#FF6A13"
+  },
+  {
+    "hex": "#F0E6D2"
+  }
+]
+```
+
+Each object needs `rgb` or `hex`. `brand`, `material`, and `color` are optional.
+
 Use **Try a sample project** on the home page if you just want to see the matching UI.
 
 Studio still handles the final printer and AMS-slot assignment. Spoolmap answers the earlier question: which spools should you pull from the shelf?

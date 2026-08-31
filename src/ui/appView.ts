@@ -109,7 +109,7 @@ export function createAppView(dependencies: AppViewDependencies): {
     const detail = inventory
       ? loaded
         ? inventoryState()
-        : '<a class="source-link" href="https://3dfilamentprofiles.com/my/spools" target="_blank" rel="noreferrer">Export JSON from 3DFilamentProfiles <span aria-hidden="true">↗</span></a> or paste a JSON array with <code>rgb</code> or <code>hex</code>'
+        : '<a class="source-link" href="https://3dfilamentprofiles.com/my/spools" target="_blank" rel="noreferrer">Export JSON from 3DFilamentProfiles <span aria-hidden="true">↗</span></a> or <button class="format-hint" type="button" data-inventory-format aria-expanded="false" aria-controls="inventory-format-popover">paste a JSON array with <code>rgb</code> or <code>hex</code></button>'
       : state.project
         ? metaGroup([
             colorCount(state.project.filaments.length),
