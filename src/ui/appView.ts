@@ -109,7 +109,7 @@ export function createAppView(dependencies: AppViewDependencies): {
     const detail = inventory
       ? loaded
         ? inventoryState()
-        : '<a class="source-link" href="https://3dfilamentprofiles.com/my/spools" target="_blank" rel="noreferrer">Export JSON from 3DFilamentProfiles <span aria-hidden="true">↗</span></a>'
+        : '<a class="source-link" href="https://3dfilamentprofiles.com/my/spools" target="_blank" rel="noreferrer">Export JSON from 3DFilamentProfiles <span aria-hidden="true">↗</span></a> or <button class="format-hint" type="button" data-inventory-format aria-expanded="false" aria-controls="inventory-format-popover">paste a JSON array with <code>rgb</code> or <code>hex</code></button>'
       : state.project
         ? metaGroup([
             colorCount(state.project.filaments.length),
@@ -145,11 +145,18 @@ export function createAppView(dependencies: AppViewDependencies): {
           ${fileName ? fileMark(fileName, "station-file") : ""}
         </div>
         <span class="drop-hint" aria-hidden="true">Drop a file anywhere in this panel</span>
-        <label class="file-action">
-          <input type="file" data-file="${kind}" accept="${accept}" ${isLoading || locked ? "disabled" : ""}
-            aria-label="${action} — ${label}. Or drop a file onto this panel.">
-          <span>${isLoading ? '<i class="spinner"></i> ' : ""}${action}</span>
-        </label>
+        <div class="station-actions">
+          <label class="file-action">
+            <input type="file" data-file="${kind}" accept="${accept}" ${isLoading || locked ? "disabled" : ""}
+              aria-label="${action} — ${label}. Or drop a file onto this panel.">
+            <span>${isLoading ? '<i class="spinner"></i> ' : ""}${action}</span>
+          </label>
+          ${
+            inventory && !loaded
+              ? `<button class="text-button" type="button" data-paste-inventory ${isLoading || locked ? "disabled" : ""}>Paste JSON</button>`
+              : ""
+          }
+        </div>
         ${loaded ? `<button class="text-button station-clear" type="button" data-clear-${kind}>${inventory ? "Clear inventory" : "Clear project"}</button>` : ""}
         ${prompt ? `<p class="station-prompt">${escapeHtml(prompt)}</p>` : ""}
       </section>`

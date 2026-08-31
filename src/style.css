@@ -55,6 +55,11 @@ html {
   scroll-behavior: smooth;
 }
 
+html,
+body {
+  min-height: 100%;
+}
+
 body {
   margin: 0;
   min-width: 0;
@@ -104,6 +109,105 @@ label:has(input:focus-visible) {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
+}
+
+.skip-link {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 80;
+  padding: 8px 12px;
+  color: var(--paper);
+  background: var(--ink);
+  border: 1px solid var(--ink);
+  font: 600 var(--text-caps) / 1 var(--mono);
+  text-decoration: none;
+  transform: translateY(-160%);
+}
+
+.skip-link:focus {
+  transform: none;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+@supports (height: 100dvh) {
+  body,
+  #app {
+    min-height: 100dvh;
+  }
+}
+
+.site-footer {
+  flex: 0 0 auto;
+  width: min(1500px, 100%);
+  margin-top: auto;
+  margin-inline: auto;
+  padding: 18px clamp(18px, 4vw, 60px) max(24px, env(safe-area-inset-bottom));
+  border-top: 1px solid var(--ink);
+  color: var(--muted);
+  font: 400 var(--text-caps) / 1.5 var(--mono);
+}
+
+.site-footer p {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 10px;
+}
+
+.site-footer p + p {
+  margin-top: 6px;
+}
+
+.site-footer a {
+  color: inherit;
+}
+
+.site-footer a:hover {
+  color: var(--signal);
+}
+
+.sample-action {
+  justify-self: start;
+  min-height: 46px;
+  padding: 10px 16px;
+  color: var(--paper);
+  background: var(--signal);
+  border: 1px solid var(--ink);
+  cursor: pointer;
+  font: 700 var(--text-caps) / 1 var(--mono);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.sample-action:hover:not(:disabled) {
+  filter: brightness(0.94);
+}
+
+.sample-action:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+.station-actions {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.row-legend small {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font: 400 var(--text-caps) / 1.3 var(--mono);
+  letter-spacing: 0.02em;
 }
 
 .topbar {
@@ -348,9 +452,10 @@ label:has(input:focus-visible) {
 }
 
 main {
+  flex: 1 0 auto;
   width: min(1500px, 100%);
   margin: 0 auto;
-  padding: 0 clamp(18px, 4vw, 60px) 90px;
+  padding: 0 clamp(18px, 4vw, 60px) 36px;
 }
 
 .intro {
@@ -475,6 +580,68 @@ h1 {
   text-decoration-color: currentColor;
 }
 
+.format-hint {
+  display: inline;
+  padding: 0;
+  border: 0;
+  color: inherit;
+  background: none;
+  font: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--strong-line);
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.format-hint:hover,
+.format-hint[aria-expanded="true"] {
+  color: var(--signal);
+  text-decoration-color: currentColor;
+}
+
+.inventory-format-popover {
+  position: fixed;
+  z-index: 50;
+  width: min(420px, calc(100vw - 24px));
+  padding: 14px 16px;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--ink);
+  box-shadow: 8px 10px 0 rgba(0, 0, 0, 0.36);
+}
+
+.inventory-format-popover p {
+  color: var(--muted);
+  font: 400 var(--text-caps) / 1.45 var(--body);
+}
+
+.inventory-format-popover p + pre,
+.inventory-format-popover pre + p {
+  margin-top: 10px;
+}
+
+.inventory-format-popover pre,
+.inventory-format-example {
+  margin: 0;
+  padding: 10px 12px;
+  overflow: auto;
+  color: var(--ink-soft);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  font: 400 var(--text-caps) / 1.45 var(--mono);
+  white-space: pre;
+}
+
+.inventory-format-popover a,
+.inventory-format-popover code,
+.inventory-format-example {
+  color: inherit;
+}
+
+.inventory-format-example {
+  margin-top: 12px;
+}
+
 .inputs {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -509,10 +676,11 @@ h1 {
 
 .inputs:not(.is-compact) .file-station:not(.is-loaded) {
   grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-rows: auto auto;
-  gap: 12px 24px;
-  min-height: 124px;
-  padding: 20px 22px;
+  grid-template-rows: auto;
+  gap: 10px 18px;
+  min-height: 88px;
+  padding: 16px 22px;
+  align-items: center;
 }
 
 .inputs:not(.is-compact) .file-station:first-child {
@@ -534,23 +702,21 @@ h1 {
 }
 
 .inputs:not(.is-compact) .file-station:not(.is-loaded) .drop-hint {
-  align-self: end;
-  color: var(--muted);
-  text-transform: none;
-  letter-spacing: 0;
+  display: none;
 }
 
-.inputs:not(.is-compact) .file-station:not(.is-loaded) .file-action {
+.inputs:not(.is-compact) .file-station:not(.is-loaded) .station-actions {
   grid-column: 2;
-  grid-row: 1 / -1;
+  grid-row: 1;
   align-self: center;
 }
 
-.inputs:not(.is-compact) .file-station:not(.is-loaded) .file-action > span {
+.inputs:not(.is-compact) .file-station:not(.is-loaded) .file-action > span,
+.inputs:not(.is-compact) .file-station:not(.is-loaded) .station-actions .text-button {
   min-width: 126px;
   min-height: 50px;
   padding-inline: 18px;
-  font-size: var(--text-meta);
+  font: 500 var(--text-meta) / 1 var(--mono);
 }
 
 .file-station.is-loaded .drop-hint {
@@ -571,7 +737,7 @@ h1 {
   align-content: center;
 }
 
-.inputs:not(.is-compact) .file-station.is-loaded .file-action {
+.inputs:not(.is-compact) .file-station.is-loaded .station-actions {
   grid-column: 2;
   grid-row: 1;
   width: 118px;
@@ -640,7 +806,7 @@ h1 {
   grid-row: 1;
 }
 
-.inputs.is-compact .file-station .file-action {
+.inputs.is-compact .file-station .station-actions {
   grid-column: 2;
   grid-row: 1;
 }
@@ -696,6 +862,11 @@ h1 {
   color: var(--muted);
   font-weight: 400;
   white-space: normal;
+}
+
+.file-station:not(.is-loaded) .station-state code {
+  font-family: var(--mono);
+  font-size: 0.92em;
 }
 
 /*
@@ -2514,6 +2685,12 @@ option {
   }
 }
 
+@media (hover: none), (pointer: coarse) {
+  .drop-hint {
+    display: none;
+  }
+}
+
 /*
  * Two one-line stations sit side by side far longer than the old 980px cut,
  * and once a column is too narrow to hold the meta the full-width row reads
@@ -2559,7 +2736,7 @@ option {
   }
 
   main {
-    padding-bottom: 60px;
+    padding-bottom: 28px;
   }
 
   .intro {
@@ -2725,18 +2902,26 @@ option {
 
   .inputs:not(.is-compact) .file-station:not(.is-loaded) {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto auto auto;
+    grid-template-rows: auto auto;
     gap: 10px;
   }
 
-  .inputs:not(.is-compact) .file-station:not(.is-loaded) .file-action {
+  .inputs:not(.is-compact) .file-station:not(.is-loaded) .station-actions {
     grid-column: 1;
-    grid-row: 3;
-    justify-self: stretch;
+    grid-row: 2;
+    justify-content: stretch;
+    width: 100%;
   }
 
-  .inputs:not(.is-compact) .file-station:not(.is-loaded) .file-action > span {
+  .inputs:not(.is-compact) .file-station:not(.is-loaded) .file-action,
+  .inputs:not(.is-compact) .file-station:not(.is-loaded) .station-actions .text-button {
+    flex: 1 1 0;
+  }
+
+  .inputs:not(.is-compact) .file-station:not(.is-loaded) .file-action > span,
+  .inputs:not(.is-compact) .file-station:not(.is-loaded) .station-actions .text-button {
     width: 100%;
+    min-width: 0;
   }
 
   /* The identity runs three or four lines here, so the thumb tops out with it. */
@@ -2797,7 +2982,7 @@ option {
     width: 100%;
   }
 
-  .inputs.is-compact .file-station.is-loaded .file-action {
+  .inputs.is-compact .file-station.is-loaded .station-actions {
     grid-column: 1;
     grid-row: 2;
   }
@@ -2974,6 +3159,15 @@ option {
     border-color: #b83318;
   }
 
+  .sample-action {
+    color: #f7f8f7;
+  }
+
+  .sample-action:hover:not(:disabled) {
+    background: #b83318;
+    border-color: #b83318;
+  }
+
   .tag-warn {
     background: rgba(151, 64, 42, 0.09);
   }
@@ -2998,7 +3192,8 @@ option {
     background: rgba(18, 23, 25, 0.055);
   }
 
-  .spool-menu {
+  .spool-menu,
+  .inventory-format-popover {
     box-shadow: 8px 10px 0 rgba(18, 23, 25, 0.12);
   }
 
