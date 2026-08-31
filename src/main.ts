@@ -10,7 +10,14 @@ import { readStoredSpools } from "./storage/inventory"
 import { createSessionLifecycle } from "./storage/sessionLifecycle"
 import { exportReadiness } from "./planning/readiness"
 import type { FilamentChoice, PhysicalSpool } from "./types"
-import { SAMPLE_INVENTORY_NAME, SAMPLE_MODEL_NAME, SAMPLE_PROJECT_TITLE } from "./sample/identity"
+import {
+  SAMPLE_INVENTORY_NAME,
+  SAMPLE_MODEL_NAME,
+  SAMPLE_PROJECT_TITLE,
+  SAMPLE_SOURCE_NAME,
+  SAMPLE_SOURCE_URL,
+  SAMPLE_SOURCE_WORK,
+} from "./sample/identity"
 import { createAppView } from "./ui/appView"
 import { createConfirmDialog } from "./ui/confirmDialog"
 import { createFeedbackDialog } from "./ui/feedbackDialog"
@@ -727,7 +734,10 @@ function render(): void {
             <li><span>2</span><strong>Choose</strong><small>Spools for each plate</small></li>
             <li><span>3</span><strong>Confirm</strong><small>AMS slots in Studio</small></li>
           </ol>
-          <button class="sample-action" type="button" data-load-sample ${state.loading.size ? "disabled" : ""}>Try a sample project</button>
+          <div class="sample-block">
+            <button class="sample-action" type="button" data-load-sample ${state.loading.size ? "disabled" : ""}>Try a sample project</button>
+            <p class="sample-credit">Sample: <a href="${SAMPLE_SOURCE_URL}" target="_blank" rel="noreferrer">${escapeHtml(SAMPLE_SOURCE_WORK)}</a> by ${escapeHtml(SAMPLE_SOURCE_NAME)} on MakerWorld</p>
+          </div>
         </div>
       </section>`
       }

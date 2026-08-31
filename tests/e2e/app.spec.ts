@@ -99,6 +99,10 @@ test("renders the import workflow without horizontal page overflow", async ({ pa
   await expect(page.getByText(/paste a list with/i)).toBeVisible()
   await expect(page.getByRole("button", { name: "Paste JSON" })).toBeVisible()
   await expect(page.getByRole("button", { name: "Try a sample project" })).toBeVisible()
+  await expect(page.getByRole("link", { name: "Heihei the chicken" })).toHaveAttribute(
+    "href",
+    "https://makerworld.com/en/models/3020508-heihei-the-chicken-moana-s-rooster-multicolor?from=search#profileId-3393551",
+  )
   await expect(page.getByRole("contentinfo")).toContainText("Files stay in this browser")
   await expect(page.getByRole("contentinfo")).toContainText("0.1.0")
   await expect(page.getByRole("contentinfo")).toContainText("not affiliated with Bambu Lab")
@@ -134,8 +138,14 @@ test("loads a sample project without asking for files", async ({ page }, testInf
   await page.getByRole("button", { name: "Try a sample project" }).click()
   await expect(page.getByRole("heading", { name: "Matches" })).toBeVisible()
   await expect(
-    page.locator("#matches").getByText("Sample toadstool", { exact: true }),
+    page.locator("#matches").getByText("Heihei the chicken – Moana's rooster - Multicolor", {
+      exact: true,
+    }),
   ).toBeVisible()
+  await expect(page.getByRole("link", { name: "Jov3DPrint" })).toHaveAttribute(
+    "href",
+    "https://makerworld.com/en/models/3020508-heihei-the-chicken-moana-s-rooster-multicolor?from=search#profileId-3393551",
+  )
   await expect(
     page.getByRole("button", { name: /Download for Bambu Studio or Orca/ }),
   ).toBeEnabled()
@@ -374,7 +384,46 @@ test("opens the spool menu without remounting the 3D viewer", async ({ page }) =
 })
 
 test("keeps the 3D viewer host when switching plates", async ({ page }) => {
-  await page.getByRole("button", { name: "Try a sample project" }).click()
+  const triangle = `<model><resources><object id="20"><mesh><vertices><vertex x="0" y="0" z="0"/><vertex x="20" y="0" z="0"/><vertex x="0" y="20" z="0"/></vertices><triangles><triangle v1="0" v2="1" v3="2" /></triangles></mesh></object></resources></model>`
+  const project = await threeMfFixture({
+    model: `<model xmlns:p="fixture"><metadata name="Title">Two Plate Fixture</metadata><resources><object id="7"><components><component p:path="/3D/Objects/body.model" objectid="20" /></components></object><object id="8"><components><component p:path="/3D/Objects/base.model" objectid="20" /></components></object></resources><build><item objectid="7" /><item objectid="8" /></build></model>`,
+    modelSettings: `<config>
+      <object id="7">
+        <metadata key="name" value="Body" />
+        <metadata key="extruder" value="1" />
+      </object>
+      <object id="8">
+        <metadata key="name" value="Base" />
+        <metadata key="extruder" value="2" />
+      </object>
+      <plate>
+        <metadata key="plater_id" value="1" />
+        <metadata key="plater_name" value="Body" />
+        <metadata key="object_id" value="7" />
+      </plate>
+      <plate>
+        <metadata key="plater_id" value="2" />
+        <metadata key="plater_name" value="Base" />
+        <metadata key="object_id" value="8" />
+      </plate>
+    </config>`,
+    extraFiles: {
+      "3D/Objects/body.model": triangle,
+      "3D/Objects/base.model": triangle,
+    },
+  })
+  await page.locator('input[data-file="inventory"]').setInputFiles({
+    name: "spools.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(
+      JSON.stringify([{ id: "red-pla", material: "PLA", rgb: "#ff0000", remaining_grams: 750 }]),
+    ),
+  })
+  await page.locator('input[data-file="model"]').setInputFiles({
+    name: "two-plate-fixture.3mf",
+    mimeType: "application/vnd.ms-package.3dmanufacturing-3dmodel+xml",
+    buffer: Buffer.from(project),
+  })
   await expect(page.getByRole("heading", { name: "Matches" })).toBeVisible()
 
   const viewer = page.locator("[data-plate-viewer]")
@@ -383,8 +432,8 @@ test("keeps the 3D viewer host when switching plates", async ({ page }) => {
     element.setAttribute("data-test-viewer-instance", "preserved")
   })
 
-  await page.getByRole("button", { name: /Planter/ }).click()
-  await expect(page.getByRole("heading", { name: "Planter" })).toBeVisible()
+  await page.getByRole("button", { name: /Base/ }).click()
+  await expect(page.getByRole("heading", { name: "Base" })).toBeVisible()
   await expect(viewer).toHaveAttribute("data-test-viewer-instance", "preserved")
 })
 

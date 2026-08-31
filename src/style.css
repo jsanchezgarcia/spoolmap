@@ -172,6 +172,12 @@ label:has(input:focus-visible) {
   color: var(--signal);
 }
 
+.sample-block {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+}
+
 .sample-action {
   justify-self: start;
   min-height: 46px;
@@ -183,6 +189,21 @@ label:has(input:focus-visible) {
   font: 700 var(--text-caps) / 1 var(--mono);
   letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+
+.sample-credit {
+  margin: 0;
+  max-width: 22rem;
+  color: var(--muted);
+  font: 400 var(--text-caps) / 1.45 var(--mono);
+}
+
+.sample-credit a {
+  color: var(--ink-soft);
+}
+
+.sample-credit a:hover {
+  color: var(--signal);
 }
 
 .sample-action:hover:not(:disabled) {

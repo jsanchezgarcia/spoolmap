@@ -10,6 +10,7 @@ import {
 import { topAlternatives } from "../matching"
 import { exportReadiness } from "../planning/readiness"
 import type { ThreeMfProject } from "../parse/threeMf"
+import { SAMPLE_PROJECT_TITLE, SAMPLE_SOURCE_NAME, SAMPLE_SOURCE_URL } from "../sample/identity"
 import type { FilamentChoice, PhysicalSpool, ProjectPlate, SpoolMatch } from "../types"
 import type { ViewPreset } from "../viewer/plateViewer"
 
@@ -562,6 +563,11 @@ export function createMatchView(dependencies: MatchViewDependencies): {
           }
           <div class="project-copy">
             <strong>${escapeHtml(state.project.title)}</strong>
+            ${
+              state.project.title === SAMPLE_PROJECT_TITLE
+                ? `<p class="sample-credit">Model by <a href="${SAMPLE_SOURCE_URL}" target="_blank" rel="noreferrer">${escapeHtml(SAMPLE_SOURCE_NAME)}</a> on MakerWorld</p>`
+                : ""
+            }
             <p class="project-meta">
               <span class="project-state">${metaGroup([
                 escapeHtml(scopeLabel()),

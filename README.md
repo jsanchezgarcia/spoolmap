@@ -34,7 +34,7 @@ A 3DFilamentProfiles export works as-is. A plain array is enough:
 
 Each object needs `rgb` or `hex`. `brand`, `material`, and `color` are optional. A CSV with the same columns also works.
 
-Use **Try a sample project** on the home page if you just want to see the matching UI.
+Use **Try a sample project** on the home page if you just want to see the matching UI. The bundled model is [Heihei the chicken](https://makerworld.com/en/models/3020508-heihei-the-chicken-moana-s-rooster-multicolor?from=search#profileId-3393551) by [Jov3DPrint](https://makerworld.com/en/models/3020508-heihei-the-chicken-moana-s-rooster-multicolor?from=search#profileId-3393551), shipped unmodified.
 
 Studio still handles the final printer and AMS-slot assignment. Spoolmap answers the earlier question: which spools should you pull from the shelf?
 
@@ -107,5 +107,7 @@ Community 3MF files are untrusted input. The parser bounds archive expansion, me
 ## License
 
 [MIT](LICENSE)
+
+The sample 3MF in `src/sample/heihei.3mf` is not MIT. It is [Heihei the chicken](https://makerworld.com/en/models/3020508-heihei-the-chicken-moana-s-rooster-multicolor?from=search#profileId-3393551) by Jov3DPrint, licensed CC BY-ND, and is kept unmodified.
 
 Spoolmap is unofficial and is not affiliated with, endorsed by, or associated with Bambu Lab, OrcaSlicer, or 3DFilamentProfiles. Their names and marks belong to their respective owners.

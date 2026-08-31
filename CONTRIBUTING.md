@@ -3,7 +3,7 @@
 Compatibility reports and small, focused pull requests are welcome. Before opening a change:
 
 1. Search existing issues and describe the user-visible problem.
-2. Remove private model metadata from sample files. Prefer a small synthetic or freely redistributable fixture.
+2. Remove private model metadata from sample files. Prefer a small synthetic or freely redistributable fixture. The bundled Heihei sample is an unmodified CC BY-ND MakerWorld project, so its creator metadata stays.
 3. Add a behavior-level regression test for parser, matching, export, or recovery changes.
 4. Run `npm run check`, `npm run test:coverage`, `npm run typecheck`, `npm run build`, and `npm run test:e2e`.
 

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { rankSpools } from "../matching"
+import { SAMPLE_PROJECT_TITLE, SAMPLE_SOURCE_NAME, SAMPLE_SOURCE_URL } from "../sample/identity"
 import type { FilamentChoice, LogicalFilament, PhysicalSpool, ProjectPlate } from "../types"
 import { createMatchView, matchesSearchTerms, normalizedSearch, searchTerms } from "./matchView"
 
@@ -39,10 +40,11 @@ function matchView(
   inventory: PhysicalSpool[],
   selectedPlateId: string | null = "1",
   openSpoolMenu: number | null = 1,
+  title = "Fixture",
 ) {
   const project = {
     fileName: "fixture.3mf",
-    title: "Fixture",
+    title,
     filaments: choices.map(({ filament: item }) => item),
     plates: [plate],
     thumbnail: null,
@@ -74,8 +76,9 @@ function render(
   inventory: PhysicalSpool[],
   selectedPlateId: string | null = "1",
   openSpoolMenu: number | null = 1,
+  title = "Fixture",
 ): string {
-  return matchView(choices, inventory, selectedPlateId, openSpoolMenu).renderMatches()
+  return matchView(choices, inventory, selectedPlateId, openSpoolMenu, title).renderMatches()
 }
 
 describe("match view", () => {
@@ -197,5 +200,22 @@ describe("match view", () => {
     expect(view.renderSpoolMenu(1)).toContain('data-spool-filter="1"')
     expect(view.renderSpoolMenu(1)).toContain("Signal Red")
     expect(view.renderSpoolMenu(99)).toBe("")
+  })
+
+  it("credits the bundled sample model's creator", () => {
+    const requested = filament(1)
+    const inventory = [spool("White")]
+    const matches = rankSpools(requested, inventory)
+    const html = render(
+      [{ filament: requested, matches, selectedSpoolId: matches[0].spool.id }],
+      inventory,
+      "1",
+      1,
+      SAMPLE_PROJECT_TITLE,
+    )
+
+    expect(html).toContain(SAMPLE_SOURCE_NAME)
+    expect(html).toContain(SAMPLE_SOURCE_URL)
+    expect(html).not.toContain("Model by Fixture")
   })
 })
