@@ -681,7 +681,7 @@ function render(): void {
         <div class="intro-copy">
           <span class="eyebrow">Bambu / Orca 3MF</span>
           <h1>Choose your spools before loading the AMS.</h1>
-          <p>Match every 3MF color against the filament you own, plate by plate. Download the result for Bambu Studio, then confirm the final AMS slots there.</p>
+          <p>Match every 3MF color against the filament you own, plate by plate. Download the result for Bambu Studio or OrcaSlicer, then confirm the final AMS slots there.</p>
         </div>
         <div class="intro-guide">
           <p class="local-note"><span class="local-dot" aria-hidden="true"></span><span><strong>Local-first.</strong> Your source files and spool list stay in this browser.</span></p>
