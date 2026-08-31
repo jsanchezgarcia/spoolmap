@@ -1,0 +1,14 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "spoolmap-www-redirect",
+  "main": "./worker/wwwRedirect.js",
+  "compatibility_date": "2026-08-30",
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [
+    {
+      "pattern": "www.spoolmap.com",
+      "custom_domain": true
+    }
+  ]
+}
