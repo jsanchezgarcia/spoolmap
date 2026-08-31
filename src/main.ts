@@ -13,6 +13,7 @@ import type { FilamentChoice, PhysicalSpool } from "./types"
 import {
   SAMPLE_INVENTORY_NAME,
   SAMPLE_MODEL_NAME,
+  SAMPLE_PROJECT_TITLE,
   createSampleProject,
   sampleInventoryText,
 } from "./sample/demoProject"
@@ -558,8 +559,8 @@ async function loadSample(): Promise<void> {
     setNotice({
       kind: saved ? "success" : "error",
       text: saved
-        ? `Sample owl loaded · ${inventory.length} spools saved on this device`
-        : `Sample owl loaded · ${inventory.length} spools; this browser would not save them`,
+        ? `${SAMPLE_PROJECT_TITLE} loaded · ${inventory.length} spools saved on this device`
+        : `${SAMPLE_PROJECT_TITLE} loaded · ${inventory.length} spools; this browser would not save them`,
     })
     void startSession(generation)
   } catch (error) {

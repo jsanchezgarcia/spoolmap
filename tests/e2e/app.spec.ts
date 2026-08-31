@@ -112,8 +112,14 @@ test("renders the import workflow without horizontal page overflow", async ({ pa
   const dimensions = await page.evaluate(() => ({
     clientWidth: document.documentElement.clientWidth,
     scrollWidth: document.documentElement.scrollWidth,
+    viewportHeight: window.innerHeight,
+    footerBottom: document.querySelector("footer")?.getBoundingClientRect().bottom ?? 0,
+    chooseTop: document.querySelector(".file-action > span")?.getBoundingClientRect().top ?? 0,
+    pasteTop: document.querySelector("[data-paste-inventory]")?.getBoundingClientRect().top ?? 0,
   }))
   expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth)
+  expect(dimensions.footerBottom).toBeGreaterThan(dimensions.viewportHeight - 8)
+  expect(Math.abs(dimensions.chooseTop - dimensions.pasteTop)).toBeLessThan(4)
 })
 
 test("loads a sample project without asking for files", async ({ page }, testInfo) => {
@@ -123,7 +129,9 @@ test("loads a sample project without asking for files", async ({ page }, testInf
   )
   await page.getByRole("button", { name: "Try a sample project" }).click()
   await expect(page.getByRole("heading", { name: "Matches" })).toBeVisible()
-  await expect(page.locator("#matches").getByText("Sample owl", { exact: true })).toBeVisible()
+  await expect(
+    page.locator("#matches").getByText("Sample toadstool", { exact: true }),
+  ).toBeVisible()
   await expect(
     page.getByRole("button", { name: /Download for Bambu Studio or Orca/ }),
   ).toBeEnabled()
