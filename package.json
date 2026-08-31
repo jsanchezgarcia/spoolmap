@@ -1,0 +1,38 @@
+{
+  "name": "spoolmap",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "npm run typecheck && vite build",
+    "deploy": "npm run build && wrangler deploy && wrangler deploy --config wrangler.redirect.jsonc",
+    "preview": "vite preview",
+    "check": "biome check .",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.node.json"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@biomejs/biome": "2.5.11",
+    "@playwright/test": "^1.62.1",
+    "@types/node": "^20.19.43",
+    "@types/three": "^0.185.4",
+    "@vitest/coverage-v8": "^4.1.11",
+    "fake-indexeddb": "^6.2.5",
+    "typescript": "~6.0.2",
+    "vite": "^8.2.2",
+    "vitest": "^4.1.11",
+    "wrangler": "^4.127.1"
+  },
+  "dependencies": {
+    "jszip": "^3.10.1",
+    "three": "^0.185.1"
+  }
+}
