@@ -94,11 +94,29 @@ describe("3MF project import", () => {
 
   it("rejects an unterminated XML tag before its carry buffer can grow unchecked", async () => {
     const data = await threeMfFixture({
+      model: `<model xmlns:p="fixture">
+        <resources>
+          <object type="model" id="7">
+            <components>
+              <component p:path="/3D/Objects/hostile.model" objectid="20" />
+            </components>
+          </object>
+        </resources>
+      </model>`,
       extraFiles: { "3D/Objects/hostile.model": `<${"x".repeat(1024 * 1024)}` },
     })
     await expect(parseThreeMfData(data, "hostile.3mf")).rejects.toThrow(
       "contains an overlong XML tag",
     )
+  })
+
+  it("does not scan leftover object meshes that the project never references", async () => {
+    const data = await threeMfFixture({
+      extraFiles: { "3D/Objects/hostile.model": `<${"x".repeat(1024 * 1024)}` },
+    })
+    await expect(parseThreeMfData(data, "unused-hostile.3mf")).resolves.toMatchObject({
+      fileName: "unused-hostile.3mf",
+    })
   })
 
   it("rejects archives whose numeric JSZip size declarations exceed the expansion limit", async () => {

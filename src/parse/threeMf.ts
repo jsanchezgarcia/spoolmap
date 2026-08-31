@@ -2,6 +2,7 @@ import JSZip from "jszip"
 import { normalizeHex } from "../color/hex"
 import type { LogicalFilament, ProjectPlate } from "../types"
 import { extractStringArray } from "./jsonArrays"
+import { createXmlTagReader } from "./xmlStream"
 
 const MAX_ARCHIVE_ENTRIES = 5_000
 const MAX_DECLARED_UNCOMPRESSED_BYTES = 256 * 1024 * 1024
@@ -147,73 +148,76 @@ function tagAttribute(tag: string, name: string): string {
   return ""
 }
 
+function meshEntryName(path: string): string {
+  return path.startsWith("/") ? path.slice(1) : path
+}
+
+function paintedLookupKey(path: string): string {
+  return path.startsWith("/") ? path : `/${path}`
+}
+
 /**
  * Painted filaments per mesh, keyed by component path then component object id.
- * Meshes are scanned as bytes so a large unpainted mesh never becomes a huge
- * JavaScript string.
+ * Only meshes referenced by the project are streamed, so leftover objects in
+ * the archive never become a huge JavaScript string.
  */
-async function readPaintedStates(zip: JSZip): Promise<Map<string, Map<string, Set<number>>>> {
+async function readPaintedStates(
+  zip: JSZip,
+  referenced: ReadonlyMap<string, ReadonlySet<string>>,
+): Promise<Map<string, Map<string, Set<number>>>> {
   const painted = new Map<string, Map<string, Set<number>>>()
 
-  const paths = Object.keys(zip.files).filter((name) => name.startsWith("3D/Objects/"))
-
-  for (const path of paths) {
-    const entry = zip.file(path)
-    if (!entry) continue
-    enforceEntryLimit(entry, MAX_MESH_BYTES, path)
+  for (const [path, objectIds] of referenced) {
+    const entryName = meshEntryName(path)
+    const entry = zip.file(entryName)
+    if (!entry || objectIds.size === 0) continue
+    enforceEntryLimit(entry, MAX_MESH_BYTES, entryName)
     const perObject = new Map<string, Set<number>>()
     const decoder = new TextDecoder()
-    let carry = ""
     let owner = ""
     let failed = false
-    const processTags = (text: string): void => {
-      for (const match of text.matchAll(/<[^>]+>/g)) {
-        const tag = match[0]
+    const reader = createXmlTagReader(
+      MAX_XML_TAG_CHARS,
+      (tag) => {
         if (/^<object\b/i.test(tag)) {
           owner = tagAttribute(tag, "id")
         } else if (/^<\/object/i.test(tag)) {
           owner = ""
-        } else if (owner && tag.includes("paint_color=")) {
+        } else if (owner && objectIds.has(owner) && tag.includes("paint_color=")) {
           const states = perObject.get(owner) ?? new Set<number>()
           decodePaintStates(tagAttribute(tag, "paint_color"), states)
           perObject.set(owner, states)
         }
-      }
-    }
+      },
+      () => new Error(`${entryName} contains an overlong XML tag.`),
+    )
 
     await new Promise<void>((resolve, reject) => {
       ;(entry as unknown as StreamableZipEntry)
         .internalStream("uint8array")
         .on("data", (chunk: Uint8Array) => {
           if (failed) return
-          carry += decoder.decode(chunk, { stream: true })
-          const boundary = carry.lastIndexOf(">")
-          if (boundary < 0) {
-            if (carry.length > MAX_XML_TAG_CHARS) {
-              failed = true
-              carry = ""
-              reject(new Error(`${path} contains an overlong XML tag.`))
-            }
-            return
-          }
-          processTags(carry.slice(0, boundary + 1))
-          carry = carry.slice(boundary + 1)
-          if (carry.length > MAX_XML_TAG_CHARS) {
+          try {
+            reader.push(decoder.decode(chunk, { stream: true }))
+          } catch (error) {
             failed = true
-            carry = ""
-            reject(new Error(`${path} contains an overlong XML tag.`))
+            reject(error instanceof Error ? error : new Error(`${entryName} could not be read.`))
           }
         })
         .on("error", reject)
         .on("end", () => {
           if (failed) return
-          carry += decoder.decode()
-          processTags(carry)
-          resolve()
+          try {
+            reader.finish(decoder.decode())
+            resolve()
+          } catch (error) {
+            failed = true
+            reject(error instanceof Error ? error : new Error(`${entryName} could not be read.`))
+          }
         })
         .resume()
     })
-    if (perObject.size) painted.set(`/${path}`, perObject)
+    if (perObject.size) painted.set(paintedLookupKey(path), perObject)
   }
 
   return painted
@@ -257,8 +261,16 @@ async function parsePlates(
   modelSettings: string,
   modelXml: string,
 ): Promise<ProjectPlate[]> {
-  const painted = await readPaintedStates(zip)
   const components = parseComponents(modelXml)
+  const referenced = new Map<string, Set<string>>()
+  for (const parts of components.values()) {
+    for (const { path, objectId } of parts) {
+      const objects = referenced.get(path) ?? new Set<string>()
+      objects.add(objectId)
+      referenced.set(path, objects)
+    }
+  }
+  const painted = await readPaintedStates(zip, referenced)
 
   const objectUsage = new Map<string, { name: string; filamentIndexes: number[] }>()
   for (const match of modelSettings.matchAll(/(<object\b[^>]*>)([\s\S]*?)<\/object>/gi)) {
