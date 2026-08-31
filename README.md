@@ -12,7 +12,9 @@ Spoolmap helps you choose filament from your full spool collection before loadin
 
 ![Four filament spools mapped by color to a multicolor printed owl.](https://spoolmap.com/spoolmap-social.png)
 
-Import a Bambu Studio or OrcaSlicer 3MF and a [3DFilamentProfiles](https://3dfilamentprofiles.com/my/spools) JSON export. Spoolmap ranks the closest owned colors, lets you choose substitutions plate by plate, and produces a remapped 3MF for Bambu Studio.
+Import a Bambu Studio or OrcaSlicer 3MF and a spool list: a [3DFilamentProfiles](https://3dfilamentprofiles.com/my/spools) JSON export, or any JSON array of spools with a color in `rgb` or `hex`. Brand, material, and color name are optional. Spoolmap ranks the closest owned colors, lets you choose substitutions plate by plate, and produces a remapped 3MF for Bambu Studio or OrcaSlicer.
+
+Use **Try a sample project** on the home page if you just want to see the matching UI.
 
 Studio still handles the final printer and AMS-slot assignment. Spoolmap answers the earlier question: which spools should you pull from the shelf?
 
@@ -46,7 +48,7 @@ npm run build
 
 ## Hosting
 
-Cloudflare serves the built app as static assets. Deployment does not require storage or a database. Feedback delivery uses a verified Cloudflare Email Routing destination kept out of the repository; configure it as a Worker secret before deploying:
+Cloudflare serves the built app as static assets on spoolmap.com only. The `*.workers.dev` preview hostname is disabled so testers are not sent to a copy where feedback is rejected. Deployment does not require storage or a database. Feedback delivery uses a verified Cloudflare Email Routing destination kept out of the repository; configure it as a Worker secret before deploying:
 
 ```bash
 npx wrangler secret put FEEDBACK_RECIPIENT

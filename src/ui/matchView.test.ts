@@ -105,10 +105,28 @@ describe("match view", () => {
     expect(html).toContain('placeholder="Color, brand, or material"')
     expect(html).toContain('data-spool-filter-value="signal red polymaker pla matte"')
     expect(html).toContain('data-spool-filter-value="ocean bambu lab petg basic"')
+    expect(html).toContain("0 is an exact color match; above ~10 is a visible miss")
+    expect(html).toContain("Download for Bambu Studio or Orca")
     expect(html).toContain('id="spool-menu-options-1" role="listbox"')
     expect(html).toContain('role="group" aria-label="Matches PLA; recommended"')
     expect(html).toContain('aria-controls="spool-menu-options-1"')
     expect(html).toContain('data-spool-popup="spool-menu-1"')
+  })
+
+  it("names the brand even when every spool is from the same vendor", () => {
+    const requested = filament(1)
+    const inventory = [
+      spool("Signal Red", { brand: "Bambu Lab" }),
+      spool("Jade", { brand: "Bambu Lab", hex: "#00AA66" }),
+    ]
+    const matches = rankSpools(requested, inventory)
+    const html = render(
+      [{ filament: requested, matches, selectedSpoolId: matches[0].spool.id }],
+      inventory,
+    )
+
+    expect(html).toContain("Bambu Lab")
+    expect(html).toContain("Signal Red")
   })
 
   it("shows a neutral finish difference even when it carries no score penalty", () => {

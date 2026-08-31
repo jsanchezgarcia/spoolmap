@@ -131,14 +131,7 @@ export function createMatchView(dependencies: MatchViewDependencies): {
     }
   }
 
-  /**
-   * A brand is only news when the drawer holds more than one. Repeating the same
-   * vendor down every row and every option costs the width that the color name,
-   * the material and the reading actually need.
-   */
-  function ownsManyBrands(): boolean {
-    return new Set(state.inventory.map(({ brand }) => brand)).size > 1
-  }
+  const DELTA_E_HINT = "0 is an exact color match; above ~10 is a visible miss"
 
   /** One labelled fact. The label is for listeners; the value speaks for itself. */
   function fact(label: string, value: string, lead = false): string {
@@ -241,10 +234,10 @@ export function createMatchView(dependencies: MatchViewDependencies): {
         aria-pressed="${selected}">
         <span class="mini-swatch" style="--swatch:${swatchBackground(colors)}"></span>
         <span class="alternative-name">${escapeHtml(match.spool.colorName)}</span>
-        ${factLine("alternative-meta", [
+        <span title="${escapeHtml(DELTA_E_HINT)}">${factLine("alternative-meta", [
           `ΔE ${match.deltaE.toFixed(1)}`,
           materialIdentity(match.spool),
-        ])}
+        ])}</span>
         <span class="alternative-flags">
           ${rank === 0 ? '<span class="alternative-rank">Best</span>' : ""}
           ${match.finishMismatch ? `<span class="tag">${escapeHtml(match.spool.materialType || "Finish differs")}</span>` : ""}
@@ -263,7 +256,6 @@ export function createMatchView(dependencies: MatchViewDependencies): {
     const options = (): string => {
       const compatible = choice.matches.filter(({ materialOk }) => materialOk)
       const incompatible = choice.matches.filter(({ materialOk }) => !materialOk)
-      const manyBrands = ownsManyBrands()
       const option = ({ spool, deltaE, materialOk, finishMismatch }: SpoolMatch): string => {
         const isSelected = spool.id === choice.selectedSpoolId
         const reason = materialOk ? "" : demotionReason(choice.filament, spool)
@@ -283,14 +275,14 @@ export function createMatchView(dependencies: MatchViewDependencies): {
               <strong>${escapeHtml(spool.colorName)}</strong>
               <small>${escapeHtml(
                 plainGroup([
-                  manyBrands ? spool.brand : "",
+                  spool.brand,
                   materialIdentity(spool),
                   isMultiColor(spool) ? "multi-color" : "",
                   finishMismatch ? "finish differs" : "",
                 ]),
               )}</small>
             </span>
-            <span class="spool-menu-score">ΔE ${deltaE.toFixed(1)}</span>
+            <span class="spool-menu-score" title="${escapeHtml(DELTA_E_HINT)}">ΔE ${deltaE.toFixed(1)}</span>
             ${reason ? `<span class="spool-menu-warning">${escapeHtml(demotionTag(choice.filament, spool))}</span>` : ""}
             <span class="spool-menu-check" aria-hidden="true">✓</span>
           </button>`
@@ -343,7 +335,7 @@ export function createMatchView(dependencies: MatchViewDependencies): {
               ? `<span class="spool-picker-selected-swatch" style="--swatch:${swatchBackground(spoolColors(selected.spool))}" aria-hidden="true"></span>
                  <span class="spool-picker-selected-copy">
                    <strong>${escapeHtml(selected.spool.colorName)}</strong>
-                   <small class="spool-picker-selected-meta">
+                   <small class="spool-picker-selected-meta" title="${escapeHtml(DELTA_E_HINT)}">
                      ${escapeHtml(
                        plainGroup([
                          "Selected",
@@ -498,7 +490,7 @@ export function createMatchView(dependencies: MatchViewDependencies): {
       <div class="export-actions">
         <button class="export-primary" type="button" data-export
           ${busy || !readiness.canExport ? "disabled" : ""}>
-          <strong>${busy ? '<i class="spinner"></i>Preparing download…' : "Download for Bambu Studio"}</strong>
+          <strong>${busy ? '<i class="spinner"></i>Preparing download…' : "Download for Bambu Studio or Orca"}</strong>
           <small>${readiness.canExport ? "Exports the whole project" : `${colorCount(readiness.unresolvedIndexes.length)} still ${readiness.unresolvedIndexes.length === 1 ? "needs" : "need"} a spool`}</small>
         </button>
       </div>`
@@ -580,7 +572,7 @@ export function createMatchView(dependencies: MatchViewDependencies): {
         ${renderPlateViewer()}
         <div class="row-legend">
           <span>Original 3MF</span>
-          <span>Your spools</span>
+          <span>Your spools <small title="${escapeHtml(DELTA_E_HINT)}">ΔE: 0 exact · ~10 a visible miss</small></span>
         </div>
         <div class="match-list">${rows.map(renderRow).join("")}</div>
       </section>`

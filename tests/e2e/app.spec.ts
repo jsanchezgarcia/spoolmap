@@ -92,8 +92,17 @@ test("renders the import workflow without horizontal page overflow", async ({ pa
   await expect(
     page.getByRole("link", { name: /Export JSON from 3DFilamentProfiles/ }),
   ).toHaveAttribute("href", "https://3dfilamentprofiles.com/my/spools")
+  await expect(page.getByText(/paste any JSON array of spools/i)).toBeVisible()
+  await expect(page.getByRole("button", { name: "Paste JSON" })).toBeVisible()
+  await expect(page.getByRole("button", { name: "Try a sample project" })).toBeVisible()
+  await expect(page.getByRole("contentinfo")).toContainText("Files stay in this browser")
+  await expect(page.getByRole("contentinfo")).toContainText("0.1.0")
+  await expect(page.getByRole("link", { name: "Skip to content" })).toHaveAttribute("href", "#main")
   await expect(page.getByRole("region", { name: "Spool inventory" })).toBeVisible()
   await expect(page.getByRole("region", { name: "3MF project" })).toBeVisible()
+  if ((page.viewportSize()?.width ?? 1000) <= 1120) {
+    await expect(page.locator(".drop-hint").first()).toBeHidden()
+  }
   await expect(page.getByRole("link", { name: "View source on GitHub" })).toHaveAttribute(
     "href",
     "https://github.com/jsanchezgarcia/spoolmap",
@@ -104,6 +113,60 @@ test("renders the import workflow without horizontal page overflow", async ({ pa
     scrollWidth: document.documentElement.scrollWidth,
   }))
   expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth)
+})
+
+test("loads a sample project without asking for files", async ({ page }, testInfo) => {
+  test.skip(
+    testInfo.project.name !== "chromium-desktop",
+    "The sample path is covered once; other projects still exercise the landing CTA.",
+  )
+  await page.getByRole("button", { name: "Try a sample project" }).click()
+  await expect(page.getByRole("heading", { name: "Matches" })).toBeVisible()
+  await expect(page.getByText("Sample owl")).toBeVisible()
+  await expect(
+    page.getByRole("button", { name: /Download for Bambu Studio or Orca/ }),
+  ).toBeEnabled()
+  await expect(page.getByText(/ΔE: 0 exact/)).toBeVisible()
+})
+
+test("imports a pasted JSON spool list", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium-desktop")
+  await page.getByRole("button", { name: "Paste JSON" }).click()
+  const dialog = page.getByRole("dialog", { name: "Paste a JSON inventory" })
+  await expect(dialog).toBeVisible()
+  await dialog.getByRole("textbox", { name: "JSON" }).fill(
+    JSON.stringify([
+      {
+        brand: "Pasted",
+        material: "PLA",
+        color: "Signal red",
+        rgb: "#ff0000",
+      },
+    ]),
+  )
+  await dialog.getByRole("button", { name: "Use this list" }).click()
+  await expect(page.getByRole("region", { name: "Spool inventory" })).toContainText("1 spool")
+  await expect(page.getByRole("status")).toContainText("1 spool saved on this device")
+})
+
+test("confirms before clearing an open project", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium-desktop")
+  await importFixture(page)
+  await page.getByRole("button", { name: "Clear project" }).click()
+  const dialog = page.getByRole("dialog", { name: "Clear project?" })
+  await expect(dialog).toBeVisible()
+  await dialog.getByRole("button", { name: "Keep it" }).click()
+  await expect(page.getByRole("heading", { name: "Matches" })).toBeVisible()
+
+  await page.getByRole("button", { name: "Clear project" }).click()
+  await page
+    .getByRole("dialog", { name: "Clear project?" })
+    .getByRole("button", { name: "Clear project" })
+    .click()
+  await expect(
+    page.getByRole("heading", { name: "Choose your spools before loading the AMS." }),
+  ).toBeVisible()
+  await expect(page.getByRole("region", { name: "Spool inventory" })).toContainText("6 spools")
 })
 
 test("sends feedback without leaving Spoolmap", async ({ page }) => {
@@ -435,7 +498,7 @@ test("imports, validates, exports, and restores a complete plan", async ({ page 
   await importFixture(page)
   await expect(page.getByText("Ready to export", { exact: true })).toBeVisible()
   const downloadButton = page.getByRole("button", {
-    name: /Download for Bambu Studio/,
+    name: /Download for Bambu Studio or Orca/,
   })
   await expect(downloadButton).toBeEnabled()
 
@@ -505,7 +568,7 @@ test("downloads on an alternate hosted origin too", async ({ page }, testInfo) =
   await importFixture(page)
 
   const downloadButton = page.getByRole("button", {
-    name: /Download for Bambu Studio/,
+    name: /Download for Bambu Studio or Orca/,
   })
   await expect(downloadButton).toBeEnabled()
   await expect(page.getByRole("button", { name: "More ways to export this project" })).toHaveCount(
