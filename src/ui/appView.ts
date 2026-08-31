@@ -109,17 +109,13 @@ export function createAppView(dependencies: AppViewDependencies): {
     const detail = inventory
       ? loaded
         ? inventoryState()
-        : '<a class="source-link" href="https://3dfilamentprofiles.com/my/spools" target="_blank" rel="noreferrer">Export JSON from 3DFilamentProfiles <span aria-hidden="true">↗</span></a>'
+        : '<a class="source-link" href="https://3dfilamentprofiles.com/my/spools" target="_blank" rel="noreferrer">Export JSON from 3DFilamentProfiles <span aria-hidden="true">↗</span></a> or paste a JSON array with <code>rgb</code> or <code>hex</code>'
       : state.project
         ? metaGroup([
             colorCount(state.project.filaments.length),
             `${state.project.plates.length || 1} plate${state.project.plates.length === 1 ? "" : "s"}`,
           ])
         : "Bambu Studio or OrcaSlicer .3mf"
-    const help =
-      inventory && !loaded
-        ? "On 3DFilamentProfiles open My Spools and export JSON. Or paste any JSON array of spools — each row needs a color in <code>rgb</code> or <code>hex</code>; <code>brand</code>, <code>material</code>, and <code>color</code> are optional."
-        : null
     const prompt = inventory ? inventoryPrompt() : null
     const fileName = inventory ? state.inventoryName : state.project?.fileName
     const accept = inventory ? ".json,application/json" : ".3mf"
@@ -162,7 +158,6 @@ export function createAppView(dependencies: AppViewDependencies): {
           }
         </div>
         ${loaded ? `<button class="text-button station-clear" type="button" data-clear-${kind}>${inventory ? "Clear inventory" : "Clear project"}</button>` : ""}
-        ${help ? `<p class="station-help">${help}</p>` : ""}
         ${prompt ? `<p class="station-prompt">${escapeHtml(prompt)}</p>` : ""}
       </section>`
   }

@@ -34,7 +34,7 @@ describe("app view", () => {
     expect(html).toContain("rgb")
     expect(html).toContain("hex")
     expect(html).toContain("Choose JSON")
-    expect(html).toContain("Drop a file anywhere in this panel")
+    expect(html).not.toContain("station-help")
   })
 
   it("hides paste and states the imported spool count when inventory is loaded", () => {
@@ -61,7 +61,6 @@ describe("app view", () => {
     expect(html).toContain("Clear inventory")
     expect(html).toContain("Ready")
     expect(html).not.toContain("data-paste-inventory")
-    expect(html).not.toContain("station-help")
   })
 
   it("calls out a stale inventory so missing spools cannot be matched quietly", () => {

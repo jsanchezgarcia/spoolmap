@@ -92,7 +92,7 @@ test("renders the import workflow without horizontal page overflow", async ({ pa
   await expect(
     page.getByRole("link", { name: /Export JSON from 3DFilamentProfiles/ }),
   ).toHaveAttribute("href", "https://3dfilamentprofiles.com/my/spools")
-  await expect(page.getByText(/paste any JSON array of spools/i)).toBeVisible()
+  await expect(page.getByText(/paste a JSON array with/i)).toBeVisible()
   await expect(page.getByRole("button", { name: "Paste JSON" })).toBeVisible()
   await expect(page.getByRole("button", { name: "Try a sample project" })).toBeVisible()
   await expect(page.getByRole("contentinfo")).toContainText("Files stay in this browser")
