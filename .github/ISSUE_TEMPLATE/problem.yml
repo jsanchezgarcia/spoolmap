@@ -1,0 +1,39 @@
+name: Something did not work
+description: Report a project that Spoolmap could not import, match, preview, or export.
+title: "[Problem] "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for helping improve Spoolmap. Your files stay private unless you choose to attach them.
+  - type: dropdown
+    id: step
+    attributes:
+      label: Where did it go wrong?
+      options:
+        - Importing a spool inventory
+        - Importing a 3MF
+        - Choosing spool matches
+        - Previewing a plate
+        - Downloading the result
+        - Opening the result in Bambu Studio or OrcaSlicer
+        - Somewhere else
+    validations:
+      required: true
+  - type: textarea
+    id: happened
+    attributes:
+      label: What happened?
+      description: Include what you expected and what you saw instead.
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and operating system
+      placeholder: Safari 19 on macOS 26
+  - type: textarea
+    id: file
+    attributes:
+      label: File details, if relevant
+      description: Model source, slicer, approximate file size, and color or plate count. Attach the file only if you are comfortable making it public.
