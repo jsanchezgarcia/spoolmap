@@ -138,6 +138,18 @@ test("loads a sample project without asking for files", async ({ page }, testInf
   await expect(page.getByText(/ΔE: 0 exact/)).toBeVisible()
 })
 
+test("closes the paste JSON dialog from Cancel without filling the field", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium-desktop")
+  await page.getByRole("button", { name: "Paste JSON" }).click()
+  const dialog = page.getByRole("dialog", { name: "Paste a JSON inventory" })
+  await expect(dialog).toBeVisible()
+  await dialog.getByRole("button", { name: "Cancel" }).click()
+  await expect(dialog).toBeHidden()
+  await expect(page.getByRole("button", { name: "Paste JSON" })).toBeVisible()
+})
+
 test("imports a pasted JSON spool list", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "chromium-desktop")
   await page.getByRole("button", { name: "Paste JSON" }).click()

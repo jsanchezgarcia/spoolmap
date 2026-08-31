@@ -19,7 +19,7 @@ export function createPasteInventoryDialog(): () => Promise<PasteResult> {
         <p class="feedback-dialog-status" role="status" aria-live="polite"></p>
       </div>
       <div class="feedback-dialog-actions">
-        <button class="feedback-dialog-cancel" type="submit" value="cancel">Cancel</button>
+        <button class="feedback-dialog-cancel" type="button" value="cancel">Cancel</button>
         <button class="feedback-dialog-submit" type="submit" value="import">Use this list</button>
       </div>
     </form>`
@@ -27,8 +27,10 @@ export function createPasteInventoryDialog(): () => Promise<PasteResult> {
 
   const form = dialog.querySelector<HTMLFormElement>("form")!
   const textarea = dialog.querySelector<HTMLTextAreaElement>("textarea[name='inventory']")!
+  const cancel = dialog.querySelector<HTMLButtonElement>(".feedback-dialog-cancel")!
   const status = dialog.querySelector<HTMLElement>(".feedback-dialog-status")!
 
+  cancel.addEventListener("click", () => dialog.close("cancel"))
   dialog.addEventListener("click", (event) => {
     if (event.target === dialog) dialog.close("cancel")
   })
