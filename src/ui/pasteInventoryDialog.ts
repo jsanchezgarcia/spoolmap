@@ -33,9 +33,7 @@ export function createPasteInventoryDialog(): () => Promise<PasteResult> {
   const example = dialog.querySelector<HTMLElement>(".inventory-format-example")!
   const cancel = dialog.querySelector<HTMLButtonElement>(".feedback-dialog-cancel")!
   const status = dialog.querySelector<HTMLElement>(".feedback-dialog-status")!
-  const sample = inventoryFormatExample().trim()
-  example.textContent = sample
-  textarea.placeholder = sample
+  example.textContent = inventoryFormatExample().trim()
 
   cancel.addEventListener("click", () => dialog.close("cancel"))
   dialog.addEventListener("click", (event) => {
