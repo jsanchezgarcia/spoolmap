@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import type { Lab } from "../types"
-import { deltaE00 } from "./ciede2000"
+import { deltaE00, hexDeltaE, hexToLab } from "./ciede2000"
 
 type ReferencePair = readonly [Lab, Lab, number]
 
@@ -62,5 +62,23 @@ describe("deltaE00", () => {
   it("is zero for identical colors", () => {
     const color = { l: 48.5, a: -12.25, b: 31.75 }
     expect(deltaE00(color, color)).toBe(0)
+  })
+})
+
+describe("hexToLab", () => {
+  it("normalizes hex aliases onto one cached Lab conversion", () => {
+    expect(hexToLab("#ff0000")).toEqual(hexToLab("#FF0000"))
+    expect(hexToLab("f00")).toEqual(hexToLab("#FF0000"))
+    expect(hexToLab("not-a-color")).toBeNull()
+  })
+})
+
+describe("hexDeltaE", () => {
+  it("is zero for the same color written in different hex forms", () => {
+    expect(hexDeltaE("#00ff00", "0x00FF00")).toBe(0)
+  })
+
+  it("returns a sentinel for unreadable colors", () => {
+    expect(hexDeltaE("#ff0000", "nope")).toBe(999)
   })
 })

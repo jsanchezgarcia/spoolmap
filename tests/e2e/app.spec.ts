@@ -348,6 +348,42 @@ test("updates a spool choice without remounting the 3D viewer", async ({ page })
   await expect(page.locator(".alternative").nth(1)).toHaveAttribute("aria-pressed", "true")
 })
 
+test("opens the spool menu without remounting the 3D viewer", async ({ page }) => {
+  await importFixture(page)
+
+  const viewer = page.locator("[data-plate-viewer]")
+  await expect(viewer).toBeVisible()
+  await viewer.evaluate((element) => {
+    element.setAttribute("data-test-viewer-instance", "preserved")
+  })
+
+  await page
+    .getByRole("button", { name: /More spools/ })
+    .first()
+    .click()
+  await expect(page.locator(".spool-menu-option")).toHaveCount(6)
+  await expect(viewer).toHaveAttribute("data-test-viewer-instance", "preserved")
+
+  await page.keyboard.press("Escape")
+  await expect(page.locator(".spool-menu-option")).toHaveCount(0)
+  await expect(viewer).toHaveAttribute("data-test-viewer-instance", "preserved")
+})
+
+test("keeps the 3D viewer host when switching plates", async ({ page }) => {
+  await page.getByRole("button", { name: "Try a sample project" }).click()
+  await expect(page.getByRole("heading", { name: "Matches" })).toBeVisible()
+
+  const viewer = page.locator("[data-plate-viewer]")
+  await expect(viewer).toBeVisible()
+  await viewer.evaluate((element) => {
+    element.setAttribute("data-test-viewer-instance", "preserved")
+  })
+
+  await page.getByRole("button", { name: /Planter/ }).click()
+  await expect(page.getByRole("heading", { name: "Planter" })).toBeVisible()
+  await expect(viewer).toHaveAttribute("data-test-viewer-instance", "preserved")
+})
+
 test("confirms destructive actions without leaving the product UI", async ({ page }) => {
   await importFixture(page)
   const clearInventory = page.getByRole("button", { name: "Clear inventory" })

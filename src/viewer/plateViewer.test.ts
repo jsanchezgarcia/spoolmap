@@ -55,6 +55,14 @@ describe("viewer security boundary", () => {
     expect(container.children.some((child) => child.className === "viewer-status")).toBe(true)
   })
 
+  it("reports attachment against the current host and no-ops relayout without a canvas", () => {
+    const viewer = new PlateViewer()
+    const container = new FakeElement()
+
+    expect(viewer.isAttachedTo(container as unknown as HTMLElement)).toBe(false)
+    expect(() => viewer.relayout()).not.toThrow()
+  })
+
   it("fully releases project state when the viewer is closed", () => {
     const viewer = new PlateViewer()
     const terminate = vi.fn()

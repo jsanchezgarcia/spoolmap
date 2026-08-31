@@ -1,5 +1,7 @@
 import type { Lab, Rgb } from "../types"
-import { hexToRgb } from "./hex"
+import { hexToRgb, normalizeHex } from "./hex"
+
+const labByHex = new Map<string, Lab>()
 
 function srgbToLinear(channel: number): number {
   const v = channel / 255
@@ -106,9 +108,22 @@ export function deltaE00(lab1: Lab, lab2: Lab): number {
   return Math.sqrt(dL * dL + dC * dC + dH * dH + rT * dC * dH)
 }
 
+/** Cached sRGB → Lab. Matching ranks every filament against every spool. */
+export function hexToLab(hex: string): Lab | null {
+  const normalized = normalizeHex(hex)
+  if (!normalized) return null
+  const cached = labByHex.get(normalized)
+  if (cached) return cached
+  const rgb = hexToRgb(normalized)
+  if (!rgb) return null
+  const lab = rgbToLab(rgb)
+  labByHex.set(normalized, lab)
+  return lab
+}
+
 export function hexDeltaE(hexA: string, hexB: string): number {
-  const a = hexToRgb(hexA)
-  const b = hexToRgb(hexB)
+  const a = hexToLab(hexA)
+  const b = hexToLab(hexB)
   if (!a || !b) return 999
-  return deltaE00(rgbToLab(a), rgbToLab(b))
+  return deltaE00(a, b)
 }

@@ -1,8 +1,11 @@
 import JSZip from "jszip"
+import { SAMPLE_PROJECT_TITLE } from "./identity"
 
-export const SAMPLE_INVENTORY_NAME = "sample-spools.json"
-export const SAMPLE_MODEL_NAME = "sample-toadstool.3mf"
-export const SAMPLE_PROJECT_TITLE = "Sample toadstool"
+export {
+  SAMPLE_INVENTORY_NAME,
+  SAMPLE_MODEL_NAME,
+  SAMPLE_PROJECT_TITLE,
+} from "./identity"
 
 /**
  * A small owned-spool list that is not tied to 3DFilamentProfiles. The parser
@@ -428,11 +431,19 @@ function paintScene(
   })
 }
 
+let sampleProject: Promise<Uint8Array> | undefined
+
 /**
  * A freely redistributable two-plate toadstool. The first plate is the whole
  * mushroom so first-time visitors see four colors on a recognizable shape.
+ * The archive is built once and reused for later clicks in the same session.
  */
-export async function createSampleProject(): Promise<Uint8Array> {
+export function createSampleProject(): Promise<Uint8Array> {
+  sampleProject ??= buildSampleProject()
+  return sampleProject
+}
+
+async function buildSampleProject(): Promise<Uint8Array> {
   const zip = new JSZip()
   const toadstoolThumb = paintScene(220, 160, "toadstool")
   const planterThumb = paintScene(220, 160, "planter")

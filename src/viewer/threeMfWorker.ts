@@ -1,4 +1,5 @@
 import JSZip from "jszip"
+import { createXmlTagReader } from "../parse/xmlStream"
 
 type ComponentDefinition = {
   rootId: string
@@ -87,6 +88,9 @@ const scope = self as unknown as WorkerScope
 let zip: JSZip | null = null
 let modelXml = ""
 let modelSettings = ""
+let objectBodies = new Map<string, string>()
+let objectSettings = new Map<string, string>()
+let buildTransforms = new Map<string, number[]>()
 
 function zipSize(entry: JSZip.JSZipObject): number {
   if (entry.dir) return 0
@@ -211,11 +215,34 @@ function multiplyTransform(a: number[], b: number[]): number[] {
   return out
 }
 
-function objectBlock(xml: string, objectId: string): string {
+function indexObjectBodies(xml: string): Map<string, string> {
+  const bodies = new Map<string, string>()
   for (const match of xml.matchAll(/(<object\b[^>]*>)([\s\S]*?)<\/object>/gi)) {
-    if (attr(match[1], "id") === objectId) return match[2]
+    const id = attr(match[1], "id")
+    if (id) bodies.set(id, match[2])
   }
-  return ""
+  return bodies
+}
+
+function indexBuildTransforms(xml: string): Map<string, number[]> {
+  const transforms = new Map<string, number[]>()
+  for (const match of xml.matchAll(/<item\b[^>]*>/gi)) {
+    const id = attr(match[0], "objectid")
+    if (id) transforms.set(id, matrix(attr(match[0], "transform")))
+  }
+  return transforms
+}
+
+function resetModelIndex(): void {
+  objectBodies = new Map()
+  objectSettings = new Map()
+  buildTransforms = new Map()
+}
+
+function indexLoadedModel(): void {
+  objectBodies = indexObjectBodies(modelXml)
+  objectSettings = indexObjectBodies(modelSettings)
+  buildTransforms = indexBuildTransforms(modelXml)
 }
 
 function metadataValue(block: string, key: string): string {
@@ -230,13 +257,10 @@ function metadataValue(block: string, key: string): string {
 function componentDefinitions(rootIds: string[]): ComponentDefinition[] {
   const definitions: ComponentDefinition[] = []
   for (const rootId of rootIds) {
-    const root = objectBlock(modelXml, rootId)
-    const settings = objectBlock(modelSettings, rootId)
+    const root = objectBodies.get(rootId) ?? ""
+    const settings = objectSettings.get(rootId) ?? ""
     const rootExtruder = filamentIndex(metadataValue(settings, "extruder"), 1)
-    const buildTag = [...modelXml.matchAll(/<item\b[^>]*>/gi)].find(
-      ([tag]) => attr(tag, "objectid") === rootId,
-    )?.[0]
-    const buildTransform = matrix(attr(buildTag ?? "", "transform"))
+    const buildTransform = buildTransforms.get(rootId) ?? matrix("")
 
     const partSettings = new Map<string, { subtype: string; filamentIndex: number }>()
     for (const part of settings.matchAll(
@@ -332,12 +356,10 @@ async function parseComponent(
   let triangleCount = 0
   let vertexCount = 0
   let decodedBytes = 0
-  let carry = ""
   const decoder = new TextDecoder()
-
-  const processTags = (text: string): void => {
-    for (const match of text.matchAll(/<[^>]+>/g)) {
-      const tag = match[0]
+  const reader = createXmlTagReader(
+    MAX_XML_TAG_CHARS,
+    (tag) => {
       if (tag.length > MAX_XML_TAG_CHARS) {
         throw new Error("The project contains malformed component XML.")
       }
@@ -380,8 +402,9 @@ async function parseComponent(
           })
         }
       }
-    }
-  }
+    },
+    () => new Error("The project contains malformed component XML."),
+  )
 
   await new Promise<void>((resolve, reject) => {
     let settled = false
@@ -401,19 +424,7 @@ async function parseComponent(
             fail(new Error("A component mesh is too large to preview safely."))
             return
           }
-          carry += decoder.decode(chunk, { stream: true })
-          const boundary = carry.lastIndexOf(">")
-          if (boundary < 0) {
-            if (carry.length > MAX_XML_TAG_CHARS) {
-              fail(new Error("The project contains malformed component XML."))
-            }
-            return
-          }
-          processTags(carry.slice(0, boundary + 1))
-          carry = carry.slice(boundary + 1)
-          if (carry.length > MAX_XML_TAG_CHARS) {
-            fail(new Error("The project contains malformed component XML."))
-          }
+          reader.push(decoder.decode(chunk, { stream: true }))
         } catch (error) {
           fail(error instanceof Error ? error : new Error("Could not read mesh."))
         }
@@ -422,11 +433,7 @@ async function parseComponent(
       .on("end", () => {
         if (settled) return
         try {
-          carry += decoder.decode()
-          if (carry.length > MAX_XML_TAG_CHARS) {
-            throw new Error("The project contains malformed component XML.")
-          }
-          processTags(carry)
+          reader.finish(decoder.decode())
           settled = true
           resolve()
         } catch (error) {
@@ -512,6 +519,7 @@ scope.onmessage = (event) => {
         zip = null
         modelXml = ""
         modelSettings = ""
+        resetModelIndex()
         if (message.bytes.byteLength > MAX_ARCHIVE_BYTES) {
           throw new Error("This project is too large to preview safely.")
         }
@@ -535,6 +543,7 @@ scope.onmessage = (event) => {
         }
         modelXml = await boundedText(archive, "3D/3dmodel.model", true)
         modelSettings = await boundedText(archive, "Metadata/model_settings.config", false)
+        indexLoadedModel()
         zip = archive
         scope.postMessage({ type: "ready" })
       } catch (error) {

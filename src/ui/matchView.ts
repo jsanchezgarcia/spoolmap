@@ -91,6 +91,7 @@ export function createMatchView(dependencies: MatchViewDependencies): {
   renderMatchRow: (filamentIndex: number) => string
   renderReadiness: () => string
   renderExportActions: () => string
+  renderSpoolMenu: (filamentIndex: number) => string
 } {
   const { state, activePlate, visibleChoices, scopeLabel, metaGroup, fileMark } = dependencies
 
@@ -253,17 +254,50 @@ export function createMatchView(dependencies: MatchViewDependencies): {
     const selectedOutsideShortlist = selected && !visibleSpoolIds.has(selected.spool.id)
     const selectedMismatch = selected ? selectedMismatchNote(choice, selected) : ""
 
-    const options = (): string => {
-      const compatible = choice.matches.filter(({ materialOk }) => materialOk)
-      const incompatible = choice.matches.filter(({ materialOk }) => !materialOk)
-      const option = ({ spool, deltaE, materialOk, finishMismatch }: SpoolMatch): string => {
-        const isSelected = spool.id === choice.selectedSpoolId
-        const reason = materialOk ? "" : demotionReason(choice.filament, spool)
-        const group = materialOk ? "compatible" : "incompatible"
-        const filterValue = normalizedSearch(
-          plainGroup([spool.colorName, spool.brand, spool.material, spool.materialType]),
-        )
-        return `
+    return `
+      <div class="spool-picker ${selectedOutsideShortlist ? "has-expanded-selection" : ""}" data-spool-picker="${choice.filament.index}">
+        <button class="spool-picker-trigger ${selectedOutsideShortlist ? "is-expanded-selection" : ""}" type="button"
+          data-spool-menu="${choice.filament.index}"
+          data-spool-popup="spool-menu-${choice.filament.index}"
+          aria-haspopup="listbox" aria-expanded="${isOpen}"
+          aria-controls="spool-menu-options-${choice.filament.index}">
+          ${
+            selectedOutsideShortlist
+              ? `<span class="spool-picker-selected-swatch" style="--swatch:${swatchBackground(spoolColors(selected.spool))}" aria-hidden="true"></span>
+                 <span class="spool-picker-selected-copy">
+                   <strong>${escapeHtml(selected.spool.colorName)}</strong>
+                   <small class="spool-picker-selected-meta" title="${escapeHtml(DELTA_E_HINT)}">
+                     ${escapeHtml(
+                       plainGroup([
+                         "Selected",
+                         `ΔE ${selected.deltaE.toFixed(1)}`,
+                         materialIdentity(selected.spool),
+                       ]),
+                     )}
+                   </small>
+                   ${selectedMismatch ? `<span class="spool-picker-mismatch ${selected.materialOk ? "is-neutral" : ""}">${escapeHtml(selectedMismatch)}</span>` : ""}
+                 </span>`
+              : `<span>More spools</span><small>${choice.matches.length} available</small>`
+          }
+          <span class="spool-picker-chevron" aria-hidden="true">⌄</span>
+        </button>
+        <div class="spool-menu" id="spool-menu-${choice.filament.index}" ${isOpen ? "" : "hidden"}>
+          ${isOpen ? renderSpoolMenuOptions(choice) : ""}
+        </div>
+      </div>`
+  }
+
+  function renderSpoolMenuOptions(choice: FilamentChoice): string {
+    const compatible = choice.matches.filter(({ materialOk }) => materialOk)
+    const incompatible = choice.matches.filter(({ materialOk }) => !materialOk)
+    const option = ({ spool, deltaE, materialOk, finishMismatch }: SpoolMatch): string => {
+      const isSelected = spool.id === choice.selectedSpoolId
+      const reason = materialOk ? "" : demotionReason(choice.filament, spool)
+      const group = materialOk ? "compatible" : "incompatible"
+      const filterValue = normalizedSearch(
+        plainGroup([spool.colorName, spool.brand, spool.material, spool.materialType]),
+      )
+      return `
           <button class="spool-menu-option ${isSelected ? "is-selected" : ""}" type="button"
             role="option" aria-selected="${isSelected}"
             data-select-spool="${escapeHtml(spool.id)}"
@@ -286,9 +320,9 @@ export function createMatchView(dependencies: MatchViewDependencies): {
             ${reason ? `<span class="spool-menu-warning">${escapeHtml(demotionTag(choice.filament, spool))}</span>` : ""}
             <span class="spool-menu-check" aria-hidden="true">✓</span>
           </button>`
-      }
+    }
 
-      return `
+    return `
         <label class="spool-menu-filter">
           <span>Filter spools</span>
           <input type="search" autocomplete="off"
@@ -321,39 +355,6 @@ export function createMatchView(dependencies: MatchViewDependencies): {
           }
         </div>
         <p class="spool-menu-empty" data-spool-filter-empty role="status" hidden>No spools match that filter.</p>`
-    }
-
-    return `
-      <div class="spool-picker ${selectedOutsideShortlist ? "has-expanded-selection" : ""}" data-spool-picker="${choice.filament.index}">
-        <button class="spool-picker-trigger ${selectedOutsideShortlist ? "is-expanded-selection" : ""}" type="button"
-          data-spool-menu="${choice.filament.index}"
-          data-spool-popup="spool-menu-${choice.filament.index}"
-          aria-haspopup="listbox" aria-expanded="${isOpen}"
-          aria-controls="spool-menu-options-${choice.filament.index}">
-          ${
-            selectedOutsideShortlist
-              ? `<span class="spool-picker-selected-swatch" style="--swatch:${swatchBackground(spoolColors(selected.spool))}" aria-hidden="true"></span>
-                 <span class="spool-picker-selected-copy">
-                   <strong>${escapeHtml(selected.spool.colorName)}</strong>
-                   <small class="spool-picker-selected-meta" title="${escapeHtml(DELTA_E_HINT)}">
-                     ${escapeHtml(
-                       plainGroup([
-                         "Selected",
-                         `ΔE ${selected.deltaE.toFixed(1)}`,
-                         materialIdentity(selected.spool),
-                       ]),
-                     )}
-                   </small>
-                   ${selectedMismatch ? `<span class="spool-picker-mismatch ${selected.materialOk ? "is-neutral" : ""}">${escapeHtml(selectedMismatch)}</span>` : ""}
-                 </span>`
-              : `<span>More spools</span><small>${choice.matches.length} available</small>`
-          }
-          <span class="spool-picker-chevron" aria-hidden="true">⌄</span>
-        </button>
-        <div class="spool-menu" id="spool-menu-${choice.filament.index}" ${isOpen ? "" : "hidden"}>
-          ${isOpen ? options() : ""}
-        </div>
-      </div>`
   }
 
   /** RIGHT column: our catalogue, our recommendation, and the override picker. */
@@ -395,6 +396,11 @@ export function createMatchView(dependencies: MatchViewDependencies): {
   function renderMatchRow(filamentIndex: number): string {
     const choice = state.choices.find(({ filament }) => filament.index === filamentIndex)
     return choice ? renderRow(choice) : ""
+  }
+
+  function renderSpoolMenu(filamentIndex: number): string {
+    const choice = state.choices.find(({ filament }) => filament.index === filamentIndex)
+    return choice ? renderSpoolMenuOptions(choice) : ""
   }
 
   function renderScope(): string {
@@ -578,5 +584,5 @@ export function createMatchView(dependencies: MatchViewDependencies): {
       </section>`
   }
 
-  return { renderExportActions, renderMatches, renderMatchRow, renderReadiness }
+  return { renderExportActions, renderMatches, renderMatchRow, renderReadiness, renderSpoolMenu }
 }

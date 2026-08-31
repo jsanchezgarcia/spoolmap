@@ -34,12 +34,12 @@ const plate: ProjectPlate = {
   thumbnail: null,
 }
 
-function render(
+function matchView(
   choices: FilamentChoice[],
   inventory: PhysicalSpool[],
   selectedPlateId: string | null = "1",
   openSpoolMenu: number | null = 1,
-): string {
+) {
   const project = {
     fileName: "fixture.3mf",
     title: "Fixture",
@@ -66,7 +66,16 @@ function render(
     scopeLabel: () => (selectedPlateId ? plate.name : "Whole model"),
     metaGroup: (parts) => parts.filter(Boolean).join(" · "),
     fileMark: (name) => name,
-  }).renderMatches()
+  })
+}
+
+function render(
+  choices: FilamentChoice[],
+  inventory: PhysicalSpool[],
+  selectedPlateId: string | null = "1",
+  openSpoolMenu: number | null = 1,
+): string {
+  return matchView(choices, inventory, selectedPlateId, openSpoolMenu).renderMatches()
 }
 
 describe("match view", () => {
@@ -171,5 +180,22 @@ describe("match view", () => {
     expect(html).toContain("1 elsewhere in the project")
     expect(html).toContain("F01 profile differs: PETG Basic selected for PLA Matte")
     expect(html).not.toContain("outside the visible plate")
+  })
+
+  it("can fill a closed picker menu without re-rendering the rest of the row", () => {
+    const requested = filament(1)
+    const inventory = [spool("Signal Red")]
+    const matches = rankSpools(requested, inventory)
+    const view = matchView(
+      [{ filament: requested, matches, selectedSpoolId: matches[0].spool.id }],
+      inventory,
+      "1",
+      null,
+    )
+
+    expect(view.renderMatches()).not.toContain('data-spool-filter="1"')
+    expect(view.renderSpoolMenu(1)).toContain('data-spool-filter="1"')
+    expect(view.renderSpoolMenu(1)).toContain("Signal Red")
+    expect(view.renderSpoolMenu(99)).toBe("")
   })
 })

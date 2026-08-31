@@ -10,13 +10,7 @@ import { readStoredSpools } from "./storage/inventory"
 import { createSessionLifecycle } from "./storage/sessionLifecycle"
 import { exportReadiness } from "./planning/readiness"
 import type { FilamentChoice, PhysicalSpool } from "./types"
-import {
-  SAMPLE_INVENTORY_NAME,
-  SAMPLE_MODEL_NAME,
-  SAMPLE_PROJECT_TITLE,
-  createSampleProject,
-  sampleInventoryText,
-} from "./sample/demoProject"
+import { SAMPLE_INVENTORY_NAME, SAMPLE_MODEL_NAME, SAMPLE_PROJECT_TITLE } from "./sample/identity"
 import { createAppView } from "./ui/appView"
 import { createConfirmDialog } from "./ui/confirmDialog"
 import { createFeedbackDialog } from "./ui/feedbackDialog"
@@ -132,6 +126,16 @@ async function ensurePlateViewer(): Promise<PlateViewer> {
   )
   plateViewer = await plateViewerPromise
   return plateViewer
+}
+
+function warmPlateViewer(): void {
+  void ensurePlateViewer()
+}
+
+function warmSampleProject(): void {
+  void import("./sample/demoProject").then(({ createSampleProject }) => {
+    void createSampleProject()
+  })
 }
 
 /** Long enough to read one line without turning a confirmation into a chore. */
@@ -425,12 +429,13 @@ async function restoreSession(id: string): Promise<void> {
     }
 
     const inventory = parseSpoolExport(payload.inventoryText)
+    const viewerReady = ensurePlateViewer()
     const project = await parseThreeMfData(payload.modelBytes, payload.modelName)
     if (request !== restoreRequest || !sessionLifecycle.isCurrent(generation)) {
       revokeProjectUrls(project)
       return
     }
-    const viewer = await ensurePlateViewer()
+    const viewer = await viewerReady
     if (request !== restoreRequest || !sessionLifecycle.isCurrent(generation)) {
       revokeProjectUrls(project)
       return
@@ -538,14 +543,14 @@ async function loadSample(): Promise<void> {
   setNotice(null)
   render()
   try {
-    const inventory = parseSpoolExport(sampleInventoryText())
+    const [{ sampleInventoryText, createSampleProject }, viewer] = await Promise.all([
+      import("./sample/demoProject"),
+      ensurePlateViewer(),
+    ])
+    const inventoryText = sampleInventoryText()
+    const inventory = parseSpoolExport(inventoryText)
     const bytes = await createSampleProject()
     const project = await parseThreeMfData(bytes, SAMPLE_MODEL_NAME)
-    if (requestInventory !== inventoryRequest || requestModel !== modelRequest) {
-      revokeProjectUrls(project)
-      return
-    }
-    const viewer = await ensurePlateViewer()
     if (requestInventory !== inventoryRequest || requestModel !== modelRequest) {
       revokeProjectUrls(project)
       return
@@ -553,7 +558,7 @@ async function loadSample(): Promise<void> {
     beginPlanChange()
     if (state.project) revokeProjectUrls(state.project)
     state.inventory = inventory
-    state.inventoryText = sampleInventoryText()
+    state.inventoryText = inventoryText
     state.inventoryName = SAMPLE_INVENTORY_NAME
     const saved = saveInventory(Date.now())
     state.project = project
@@ -623,14 +628,15 @@ function filamentCodes(indexes: number[]): string {
   return indexes.map((index) => `F${String(index).padStart(2, "0")}`).join(", ")
 }
 
-const { renderExportActions, renderMatches, renderMatchRow, renderReadiness } = createMatchView({
-  state,
-  activePlate,
-  visibleChoices,
-  scopeLabel,
-  metaGroup,
-  fileMark,
-})
+const { renderExportActions, renderMatches, renderMatchRow, renderReadiness, renderSpoolMenu } =
+  createMatchView({
+    state,
+    activePlate,
+    visibleChoices,
+    scopeLabel,
+    metaGroup,
+    fileMark,
+  })
 
 function focusSelector(element: Element | null): string | null {
   if (!(element instanceof HTMLElement)) return null
@@ -664,9 +670,30 @@ function focusSelector(element: Element | null): string | null {
   return null
 }
 
+function attachPlateViewer(): void {
+  const host = document.querySelector<HTMLElement>("[data-plate-viewer]")
+  if (!host || !state.project) return
+  const plate = activePlate()
+  const sync = (viewer: PlateViewer) => {
+    if (!host.isConnected || !state.project) return
+    if (!viewer.isAttachedTo(host)) viewer.mount(host)
+    viewer.setColors(originalViewerColors(), spoolViewerColors())
+    viewer.showPlate(plate?.id ?? null, plate?.objectIds ?? [])
+  }
+  if (plateViewer) {
+    sync(plateViewer)
+    return
+  }
+  void ensurePlateViewer().then((viewer) => {
+    if (!host.isConnected || !state.project) return
+    sync(viewer)
+  })
+}
+
 function render(): void {
   const restoreFocus = focusSelector(document.activeElement)
   const recentWasOpen = document.querySelector<HTMLDetailsElement>(".recent-drawer")?.open
+  const existingViewerHost = document.querySelector<HTMLElement>("[data-plate-viewer]")
   app.innerHTML = `
     <header class="topbar">
       <a class="brand" href="/" aria-label="Spoolmap home">
@@ -723,15 +750,11 @@ function render(): void {
   bindInventoryFormatHint()
   fitFileNames()
   const viewerHost = document.querySelector<HTMLElement>("[data-plate-viewer]")
-  if (viewerHost) {
-    void ensurePlateViewer().then((viewer) => {
-      if (!viewerHost.isConnected || !state.project) return
-      viewer.mount(viewerHost)
-      const plate = activePlate()
-      viewer.setColors(originalViewerColors(), spoolViewerColors())
-      viewer.showPlate(plate?.id ?? null, plate?.objectIds ?? [])
-    })
+  if (existingViewerHost && viewerHost && existingViewerHost !== viewerHost) {
+    viewerHost.replaceWith(existingViewerHost)
+    plateViewer?.relayout()
   }
+  attachPlateViewer()
   if (recentWasOpen) {
     const recent = document.querySelector<HTMLDetailsElement>(".recent-drawer")
     if (recent) recent.open = true
@@ -739,13 +762,6 @@ function render(): void {
   if (restoreFocus) {
     document.querySelector<HTMLElement>(restoreFocus)?.focus({ preventScroll: true })
   }
-}
-
-function renderPreservingScroll(): void {
-  const x = window.scrollX
-  const y = window.scrollY
-  render()
-  window.scrollTo(x, y)
 }
 
 /** Refresh selection-dependent UI without destroying and remounting the viewer. */
@@ -823,12 +839,13 @@ async function importModel(file: File): Promise<void> {
       throw new Error("This project is larger than the 100 MB safety limit.")
     }
     const bytes = await file.arrayBuffer()
+    const viewerReady = ensurePlateViewer()
     const project = await parseThreeMfData(bytes, file.name)
     if (request !== modelRequest) {
       revokeProjectUrls(project)
       return
     }
-    const viewer = await ensurePlateViewer()
+    const viewer = await viewerReady
     if (request !== modelRequest) {
       revokeProjectUrls(project)
       return
@@ -872,7 +889,17 @@ function bindInventoryFormatHint(): void {
   hint.addEventListener("blur", () => inventoryFormat.delayHide())
 }
 
+function bindWarmupHints(): void {
+  document
+    .querySelector("[data-load-sample]")
+    ?.addEventListener("pointerenter", warmSampleProject, { once: true })
+  document
+    .querySelector("[data-drop='model']")
+    ?.addEventListener("pointerenter", warmPlateViewer, { once: true })
+}
+
 function bindFileControls(): void {
+  bindWarmupHints()
   document.querySelectorAll<HTMLInputElement>("[data-file]").forEach((input) => {
     input.addEventListener("change", () => {
       const file = input.files?.[0]
@@ -955,21 +982,19 @@ app.addEventListener("click", async (event) => {
   if (spoolMenuTrigger) {
     const index = Number(spoolMenuTrigger.dataset.spoolMenu)
     const willOpen = state.openSpoolMenu !== index
-    state.openSpoolMenu = willOpen ? index : null
-    renderPreservingScroll()
-    const renderedTrigger = document.querySelector<HTMLButtonElement>(
-      `[data-spool-menu="${index}"]`,
-    )
-    const menu = document.getElementById(`spool-menu-${index}`)
-    if (menu) {
-      if (willOpen) {
-        const rect = renderedTrigger?.getBoundingClientRect() ?? menu.getBoundingClientRect()
-        const below = window.innerHeight - rect.bottom
-        const desiredHeight = Math.min(390, window.innerHeight * 0.58)
-        menu.classList.toggle("opens-upward", below < desiredHeight && rect.top > below)
-        menu.querySelector<HTMLInputElement>("[data-spool-filter]")?.focus({ preventScroll: true })
-      }
-    }
+    closeSpoolMenus()
+    if (!willOpen) return
+    state.openSpoolMenu = index
+    const menu = document.getElementById(spoolMenuTrigger.dataset.spoolPopup ?? "")
+    if (!menu) return
+    menu.innerHTML = renderSpoolMenu(index)
+    menu.hidden = false
+    spoolMenuTrigger.setAttribute("aria-expanded", "true")
+    const rect = spoolMenuTrigger.getBoundingClientRect()
+    const below = window.innerHeight - rect.bottom
+    const desiredHeight = Math.min(390, window.innerHeight * 0.58)
+    menu.classList.toggle("opens-upward", below < desiredHeight && rect.top > below)
+    menu.querySelector<HTMLInputElement>("[data-spool-filter]")?.focus({ preventScroll: true })
     return
   }
 
@@ -1166,3 +1191,8 @@ window.addEventListener("resize", () => {
 
 render()
 void refreshHistory().then(render)
+if (typeof requestIdleCallback === "function") {
+  requestIdleCallback(warmPlateViewer, { timeout: 2500 })
+} else {
+  window.setTimeout(warmPlateViewer, 1)
+}
