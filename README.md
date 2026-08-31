@@ -10,7 +10,7 @@ Spoolmap helps you choose filament from your full spool collection before loadin
 
 [Open Spoolmap](https://spoolmap.com)
 
-![Four filament spools mapped by color to a multicolor printed owl.](https://spoolmap.com/spoolmap-social.png)
+![Four filament spools mapped by color to a multicolor printed owl.](public/spoolmap-social.png)
 
 Import a Bambu Studio or OrcaSlicer 3MF and a spool list: a [3DFilamentProfiles](https://3dfilamentprofiles.com/my/spools) JSON or CSV export, or any JSON/CSV list of spools with a color in `rgb` or `hex`. Brand, material, and color name are optional. Spoolmap ranks the closest owned colors, lets you choose substitutions plate by plate, and produces a remapped 3MF for Bambu Studio or OrcaSlicer.
 
@@ -34,7 +34,7 @@ A 3DFilamentProfiles export works as-is. A plain array is enough:
 
 Each object needs `rgb` or `hex`. `brand`, `material`, and `color` are optional. A CSV with the same columns also works.
 
-Use **Try a sample project** on the home page if you just want to see the matching UI. The bundled model is [Heihei the chicken](https://makerworld.com/en/models/3020508-heihei-the-chicken-moana-s-rooster-multicolor?from=search#profileId-3393551) by [Jov3DPrint](https://makerworld.com/en/models/3020508-heihei-the-chicken-moana-s-rooster-multicolor?from=search#profileId-3393551), shipped unmodified.
+Use **Try a sample project** on the home page if you just want to see the matching UI. The bundled model is [Heihei the chicken by Jov3DPrint](https://makerworld.com/en/models/3020508-heihei-the-chicken-moana-s-rooster-multicolor?from=search#profileId-3393551), shipped unmodified.
 
 Studio still handles the final printer and AMS-slot assignment. Spoolmap answers the earlier question: which spools should you pull from the shelf?
 
